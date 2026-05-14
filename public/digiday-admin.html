@@ -493,32 +493,15 @@ body {
   <!-- TAB: Nahrávání dat -->
   <div class="tab-page act" id="tab-upload">
     <div class="card admin-wide">
-      <div class="card-title">&#x1F4E4; Nahrání CSV souborů z Pipedrive</div>
+      <div class="card-title">&#x1F504; Synchronizace s Pipedrive</div>
       <div class="info-box">
-        Exportujte CSV z Pipedrive (Aktivity &rarr; Export). Nahrávejte <strong>soubor s hovory</strong> a <strong>soubor se schůzkami</strong> odděleně.
-        Data se uloží do paměti prohlížeče a ostatní stránky je načtou tlačítkem <em>↻ Z Admin</em>.
+        Dashboard sám stahuje hovory a schůzky přímo z Pipedrive API. Klikněte na tlačítko níže pro načtení posledních dat (defaultně 13 měsíců zpět). Data se uloží do paměti tohoto prohlížeče.
       </div>
-      <div class="upload-card">
-        <div class="upload-card-ico">&#x1F4DE;</div>
-        <div class="upload-card-body">
-          <div class="upload-card-label">Hovory (spojené + nespojené)</div>
-          <label class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
-            &#x1F4C2; Vybrat CSV
-            <input type="file" accept=".csv" style="display:none" onchange="onFile('calls',this)">
-          </label>
-          <span class="upload-card-status" id="status-calls">Soubor nenačten</span>
-        </div>
-      </div>
-      <div class="upload-card">
-        <div class="upload-card-ico">&#x1F4C5;</div>
-        <div class="upload-card-body">
-          <div class="upload-card-label">Schůzky</div>
-          <label class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
-            &#x1F4C2; Vybrat CSV
-            <input type="file" accept=".csv" style="display:none" onchange="onFile('meetings',this)">
-          </label>
-          <span class="upload-card-status" id="status-meetings">Soubor nenačten</span>
-        </div>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:18px 0 6px">
+        <button class="btn-primary" id="btn-pd-sync" onclick="syncFromPipedrive(this)" style="display:inline-flex;align-items:center;gap:8px;font-size:14px;padding:12px 22px">
+          &#x2193; Načíst z Pipedrive
+        </button>
+        <span id="pd-sync-status" style="font-family:var(--mono);font-size:11px;color:var(--txt3)">Připraven</span>
       </div>
       <div id="upload-stats"></div>
     </div>
@@ -570,37 +553,16 @@ body {
         <div id="pos-inputs"></div>
         <button class="btn-primary" style="margin-top:16px" onclick="savePosDefaults()">&#x1F4BE; Uložit pozice</button>
       </div>
-      <div class="card admin-wide" style="border-color:rgba(64,196,255,.3)">
-        <div class="card-title">&#x2601;&#xFE0F; Cloud Sync &mdash; JSONbin.io</div>
-        <p style="font-size:12px;color:var(--txt3);margin-bottom:16px;line-height:1.6">
-          Sdílejte data a nastavení mezi více PC/NTB přes JSONbin.io (zdarma).
-          Admin nahrává data, ostatní je stahují tlačítkem <em>&#x2193; Z cloudu</em> na každé stránce.
+      <div class="card admin-wide" style="border-color:rgba(0,230,118,.25)">
+        <div class="card-title">&#x1F50C; Zdroj dat &mdash; Pipedrive API</div>
+        <p style="font-size:12px;color:var(--txt3);margin-bottom:8px;line-height:1.6">
+          Dashboard čte data přímo z Pipedrive cez serverless endpoint <code style="background:var(--sur3);padding:2px 6px;border-radius:4px">/api/pipedrive</code>. Token je uložen v Vercel env <code style="background:var(--sur3);padding:2px 6px;border-radius:4px">PIPEDRIVE_API_TOKEN</code> a nikdy se nedostane do browseru.
         </p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-          <div>
-            <div class="pass-label">Master API Key (jen Admin)</div>
-            <input type="password" class="pass-inp" id="cloud-api-key" placeholder="$2a$10$...">
-          </div>
-          <div>
-            <div class="pass-label">Bin ID</div>
-            <input type="text" class="pass-inp" id="cloud-bin-id" placeholder="64abc123...">
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-          <button class="btn-sec" onclick="cloudCreateBin()">+ Nový Bin</button>
-          <button class="btn-primary" onclick="saveCloudSettings()">&#x1F4BE; Uložit nastavení</button>
-          <button class="btn-primary" style="background:var(--blu);border-color:var(--blu)" onclick="cloudPush()">&#x2191; Nahrát do cloudu</button>
-          <button class="btn-sec" onclick="cloudPull()">&#x2193; Stáhnout z cloudu</button>
-        </div>
-        <div id="cloud-status" style="font-family:var(--mono);font-size:11px;color:var(--txt3);padding:8px 12px;background:var(--sur3);border-radius:6px;min-height:28px">Nepropojeno</div>
-        <div style="margin-top:12px;font-size:11px;color:var(--txt3);line-height:1.8">
-          <strong>Postup:</strong>
-          1) Registrace na <a href="https://jsonbin.io" target="_blank" style="color:var(--blu)">jsonbin.io</a> (free)
-          &rarr; 2) Zkopírujte Master Key
-          &rarr; 3) Klikněte &ldquo;+ Nový Bin&rdquo;
-          &rarr; 4) Nahrajte CSV &rarr; &ldquo;&#x2191; Nahrát do cloudu&rdquo;
-          &rarr; 5) Na ostatních PC: &#x2193; Z cloudu
-        </div>
+        <p style="font-size:12px;color:var(--txt3);line-height:1.6">
+          Stahované typy aktivit:
+          <strong>spojeny_hovor</strong>, <strong>nespojeny_hovor</strong>, <strong>call</strong> (jako hovory),
+          <strong>bezna_schuzka</strong>, <strong>meeting</strong> (jako schůzky).
+        </p>
       </div>
     </div>
   </div>
@@ -776,28 +738,6 @@ function loadData() {
     if (m) st.meetings = JSON.parse(m);
     if (h) st.hasData  = h === '1';
   } catch(e){}
-}
-
-/* ════════════ CSV ════════════ */
-function parseCSV(text) {
-  const lines = text.replace(/\r/g,'').trim().split('\n');
-  const headers = parseLine(lines[0]);
-  return lines.slice(1).filter(l=>l.trim()).map(l => {
-    const vals = parseLine(l);
-    const obj = {};
-    headers.forEach((h,i) => obj[h.trim()] = (vals[i]||'').trim());
-    return obj;
-  });
-}
-function parseLine(line) {
-  const res=[]; let inQ=false, cur='';
-  for(let i=0;i<line.length;i++){
-    const c=line[i];
-    if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
-    else if(c===','&&!inQ){res.push(cur);cur='';}
-    else cur+=c;
-  }
-  res.push(cur); return res;
 }
 
 /* ════════════ DATA HELPERS ════════════ */
@@ -1030,78 +970,38 @@ function bonusBreakdown(pos, connTotal, connPerDay, meetings, worked, fond) {
 
 /* ════ ADMIN JS ════ */
 
-/* ── Cloud sync ── */
-var _CCK = 'dcc4_cloud_cfg';
-function _gCC() { try { return JSON.parse(localStorage.getItem(_CCK) || '{}'); } catch(e) { return {}; } }
-function _sCC(o) { try { localStorage.setItem(_CCK, JSON.stringify(o)); } catch(e) {} }
-
-function cloudPull() {
-  var cc = _gCC(); if (!cc.binId) { toast('Nastavte Bin ID v Nastavení.', 'err'); return; }
-  var hdrs = {'Content-Type': 'application/json'};
-  if (cc.apiKey) { hdrs['X-Master-Key'] = cc.apiKey; }
-  var el = document.getElementById('cloud-status'); if (el) { el.textContent = 'Stahuj\u2026'; }
-  fetch('https://api.jsonbin.io/v3/b/' + cc.binId + '/latest', {headers: hdrs})
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.record) {
-        var rec = d.record;
-        if (rec.cfg)      { localStorage.setItem('dcc4_cfg',        JSON.stringify(rec.cfg)); }
-        if (rec.calls)    { localStorage.setItem('dcc4_calls_v',    JSON.stringify(rec.calls)); }
-        if (rec.meetings) { localStorage.setItem('dcc4_meetings_v', JSON.stringify(rec.meetings)); }
-        if (rec.has_data) { localStorage.setItem('dcc4_has_data',   rec.has_data); }
-        if (el) { el.textContent = 'Sta\u017eeno: ' + new Date().toLocaleTimeString('cs-CZ'); }
-        loadCfg(); loadData(); renderUploadTab(); renderOpTable();
-        toast('Data sta\u017eena z cloudu \u2713');
-      } else { if (el) { el.textContent = 'Nedostupn\xfd'; } toast('Bin nedostupn\xfd', 'err'); }
+/* ── Pipedrive sync ── */
+function syncFromPipedrive(btn) {
+  var el = document.getElementById('pd-sync-status');
+  if (el) { el.textContent = 'Stahuji z Pipedrive…'; el.style.color = 'var(--blu)'; }
+  if (btn) { btn.disabled = true; }
+  fetch('/api/pipedrive')
+    .then(function(r) {
+      if (!r.ok) { return r.json().then(function(d) { throw new Error(d.error || ('HTTP ' + r.status)); }); }
+      return r.json();
     })
-    .catch(function(e) { if (el) { el.textContent = 'Chyba'; } toast('Chyba: ' + e.message, 'err'); });
-}
-
-function cloudPush() {
-  var cc = _gCC(); if (!cc.apiKey || !cc.binId) { toast('Nastavte API kl\xed\u010d a Bin ID.', 'err'); return; }
-  var el = document.getElementById('cloud-status'); if (el) { el.textContent = 'Nahr\xe1v\xe1m\u2026'; }
-  var payload = {
-    cfg:      JSON.parse(localStorage.getItem('dcc4_cfg')        || '{}'),
-    calls:    JSON.parse(localStorage.getItem('dcc4_calls_v')    || '[]'),
-    meetings: JSON.parse(localStorage.getItem('dcc4_meetings_v') || '[]'),
-    has_data: localStorage.getItem('dcc4_has_data') || '0',
-    updated:  new Date().toISOString()
-  };
-  fetch('https://api.jsonbin.io/v3/b/' + cc.binId, {
-    method: 'PUT',
-    headers: {'Content-Type': 'application/json', 'X-Master-Key': cc.apiKey},
-    body: JSON.stringify(payload)
-  }).then(function(r) { return r.json(); })
     .then(function(d) {
-      if (d.record) { if (el) { el.textContent = 'Nahr\xe1no: ' + new Date().toLocaleTimeString('cs-CZ'); } toast('Nahr\xe1no do cloudu \u2713'); }
-      else { if (el) { el.textContent = 'Chyba'; } toast('Chyba: ' + (d.message || '?'), 'err'); }
+      st.calls = d.calls || [];
+      st.meetings = d.meetings || [];
+      st.hasData = st.calls.length > 0 || st.meetings.length > 0;
+      saveData();
+      if (st.hasData) {
+        var mKey = (typeof getDataMaxMonth === 'function') ? getDataMaxMonth() : getMonthKey(new Date());
+        saveMonth(mKey);
+      }
+      try { localStorage.setItem(SK + 'fetched_at', d.fetchedAt || new Date().toISOString()); } catch(e) {}
+      renderUploadTab();
+      if (el) {
+        el.textContent = '✓ ' + st.calls.length + ' hovorů · ' + st.meetings.length + ' schůzek · ' + new Date().toLocaleTimeString('cs-CZ');
+        el.style.color = 'var(--grn)';
+      }
+      toast('Pipedrive: načteno ✓');
     })
-    .catch(function(e) { if (el) { el.textContent = 'Chyba'; } toast('Chyba: ' + e.message, 'err'); });
-}
-
-function saveCloudSettings() {
-  var key = (document.getElementById('cloud-api-key') || {}).value || '';
-  var bin = (document.getElementById('cloud-bin-id')  || {}).value || '';
-  _sCC({apiKey: key.trim(), binId: bin.trim()});
-  toast('Cloud nastaven\xed ulo\u017eeno \u2713');
-}
-
-function cloudCreateBin() {
-  var key = (document.getElementById('cloud-api-key') || {}).value || '';
-  if (!key.trim()) { toast('Zadejte API kl\xed\u010d.', 'err'); return; }
-  fetch('https://api.jsonbin.io/v3/b', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json', 'X-Master-Key': key.trim(), 'X-Bin-Name': 'DigiDay-CC'},
-    body: JSON.stringify({cfg: {}, calls: [], meetings: [], has_data: '0', created: new Date().toISOString()})
-  }).then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.metadata && d.metadata.id) {
-        var bid = d.metadata.id; _sCC({apiKey: key.trim(), binId: bid});
-        var be = document.getElementById('cloud-bin-id'); if (be) { be.value = bid; }
-        toast('Bin vytvo\u0159en: ' + bid + ' \u2713');
-      } else { toast('Chyba: ' + (d.message || JSON.stringify(d)), 'err'); }
+    .catch(function(e) {
+      if (el) { el.textContent = 'Chyba: ' + e.message; el.style.color = '#ff5555'; }
+      toast('Chyba: ' + e.message, 'err');
     })
-    .catch(function(e) { toast('Chyba: ' + e.message, 'err'); });
+    .finally(function() { if (btn) { btn.disabled = false; } });
 }
 
 /* ── Auth ── */
@@ -1148,23 +1048,6 @@ function showTab(id) {
 }
 
 /* ── Upload ── */
-function onFile(type, inp) {
-  var file = inp.files[0]; if (!file) { return; }
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var data = parseCSV(e.target.result);
-    if (type === 'calls') { st.calls = data; } else { st.meetings = data; }
-    st.hasData = st.calls.length > 0 || st.meetings.length > 0;
-    if (st.hasData) {
-      saveData();
-      var mKey = getDataMaxMonth ? getDataMaxMonth() : getMonthKey(new Date());
-      saveMonth(mKey);
-    }
-    renderUploadTab();
-    toast('Nahr\xe1no: ' + file.name + ' (' + data.length + ' \u0159\xe1dk\u016f)');
-  };
-  reader.readAsText(file, 'utf-8');
-}
 
 function clearData() {
   st.calls = []; st.meetings = []; st.hasData = false;
@@ -1181,14 +1064,20 @@ function statMini(lbl, val, clr, ok) {
 function renderUploadTab() {
   var cc = st.calls.length, cm = st.meetings.length;
   var hasC = cc > 0, hasM = cm > 0;
-  var sc = document.getElementById('status-calls');
-  var sm = document.getElementById('status-meetings');
-  if (sc) { sc.textContent = hasC ? cc + ' z\xe1znam\u016f na\u010dteno' : 'Soubor nena\u010dten'; sc.className = 'upload-card-status' + (hasC ? ' ok' : ''); }
-  if (sm) { sm.textContent = hasM ? cm + ' z\xe1znam\u016f na\u010dteno' : 'Soubor nena\u010dten'; sm.className = 'upload-card-status' + (hasM ? ' ok' : ''); }
+  var sync = document.getElementById('pd-sync-status');
+  var fetched = '';
+  try { fetched = localStorage.getItem(SK + 'fetched_at') || ''; } catch(e) {}
+  if (sync && !sync.textContent.startsWith('\u2713') && !sync.textContent.startsWith('Stahuji') && !sync.textContent.startsWith('Chyba')) {
+    if (fetched) {
+      sync.textContent = 'Posledn\u00ed na\u010dten\u00ed: ' + new Date(fetched).toLocaleString('cs-CZ');
+    } else {
+      sync.textContent = 'Je\u0161t\u011b nena\u010dteno z Pipedrive';
+    }
+  }
   var stats = document.getElementById('upload-stats');
   if (!stats) { return; }
   if (!hasC && !hasM) {
-    stats.innerHTML = '<div style="color:var(--txt3);font-family:var(--mono);font-size:13px;padding:16px 0">\u017d\xe1dn\xe1 data v pam\u011bti.</div>';
+    stats.innerHTML = '<div style="color:var(--txt3);font-family:var(--mono);font-size:13px;padding:16px 0">\u017d\xe1dn\xe1 data v pam\u011bti. Klikn\u011bte na <strong>\u2193 Na\u010d\u00edst z Pipedrive</strong>.</div>';
     return;
   }
   stats.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px">'
@@ -1196,7 +1085,7 @@ function renderUploadTab() {
     + statMini('Sch\u016fzky', cm, 'var(--pink)', hasM)
     + statMini('Celkem', cc + cm, 'var(--blu)', hasC || hasM)
     + '</div>'
-    + (hasC || hasM ? '<button class="btn-danger" style="margin-top:16px" onclick="clearData()">&#x1F5D1; Vymazat v\u0161echna data</button>' : '');
+    + (hasC || hasM ? '<button class="btn-danger" style="margin-top:16px" onclick="clearData()">&#x1F5D1; Vymazat lok\u00e1ln\u00ed data</button>' : '');
 }
 
 /* ── Operátoři ── */
@@ -1345,11 +1234,6 @@ function savePosDefaults() { saveCfg(); toast('Pozice ulo\u017eeny \u2713'); }
 function initAdmin() {
   renderOpTable();
   renderUploadTab();
-  var cc = _gCC();
-  var ke = document.getElementById('cloud-api-key'); if (ke && cc.apiKey) { ke.value = cc.apiKey; }
-  var be = document.getElementById('cloud-bin-id');  if (be && cc.binId)  { be.value = cc.binId;  }
-  var se = document.getElementById('cloud-status');
-  if (se) { se.textContent = cc.binId ? 'Bin ID: ' + cc.binId + ' (nastaveno)' : 'Nepropojeno'; }
 }
 
 document.addEventListener('DOMContentLoaded', function() {

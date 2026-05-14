@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="cs"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>DigiDay · Obchodní výkon</title>
+<title>DigiDay · Report CC</title>
 <style>
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -414,8 +414,8 @@ body {
   <div class="nav-pills" style="margin-left:16px">
     <a href="digiday-index.html" class="nav-pill ">&#x2302; Hub</a>
     <a href="digiday-tym.html" class="nav-pill ">&#x1F3AF; T&#xFD;m</a>
-    <a href="digiday-report.html" class="nav-pill ">&#x1F4DE; Report CC</a>
-    <a href="digiday-obchod.html" class="nav-pill act">&#x1F4C8; Obchodn&#xED;</a>
+    <a href="digiday-report.html" class="nav-pill act">&#x1F4DE; Report CC</a>
+    <a href="digiday-obchod.html" class="nav-pill ">&#x1F4C8; Obchodn&#xED;</a>
     <a href="digiday-jednotlivci.html" class="nav-pill ">&#x1F464; Jednotlivci</a>
   </div>
   <div class="topbar-spacer"></div>
@@ -435,7 +435,7 @@ body {
   <div class="strip-div"></div>
   <button class="demo-btn" onclick="cloudPull()"
     style="border-color:rgba(64,196,255,.4);color:var(--blu)"
-    title="St&#xe1;hne data z JSONbin cloudu (funguje odkudkoliv)">&#x2193; Z&nbsp;cloudu</button>
+    title="Stáhne data z Pipedrive (live)">↓ Z Pipedrive</button>
 </div>
 <div class="period-bar">
   <div class="view-seg">
@@ -450,7 +450,7 @@ body {
     <button class="today-btn" onclick="goToday()">Dnes</button>
   </div>
 </div>
-<div id="obchod-body"><div class="empty"><div class="empty-ico">&#x1F4C8;</div><div class="empty-h">Nejsou data</div><div class="empty-s">Klikněte <strong>↻ Z Admin</strong> nebo <strong>↓ Z&nbsp;cloudu</strong>.</div></div></div>
+<div id="report-body"><div class="empty"><div class="empty-ico">&#x1F4C2;</div><div class="empty-h">Nejsou data</div><div class="empty-s">Klikněte <strong>↻ Z Admin</strong> nebo <strong>↓ Z Pipedrive</strong>.</div></div></div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
@@ -894,31 +894,29 @@ function btnLoadAdmin(btn) {
       setTimeout(function() { btn.innerHTML = '&#x21BB; Z Admin'; }, 4000);
     }
     toast('\u26A0 Data nejsou v tomto prohl\xed\u017ee\u010di. '
-      + 'Nahrajte CSV v Admin nebo pou\u017eijte \u2193 Z\xa0cloudu.', 'err');
+      + 'Klikn\u011bte na \u2193 Z Pipedrive pro na\u010dten\xed dat.', 'err');
   }
 }
 function cloudPull() {
-  var cc = _gCC();
-  if (!cc.binId) { toast('Nastavte Cloud Sync v Admin.', 'err'); return; }
-  var hdrs = {'Content-Type': 'application/json'};
-  if (cc.apiKey) { hdrs['X-Master-Key'] = cc.apiKey; }
-  toast('\u2193 Stahuj\xed z cloudu\u2026');
-  fetch('https://api.jsonbin.io/v3/b/' + cc.binId + '/latest', {headers: hdrs})
-    .then(function(r) { return r.json(); })
+  toast('\u2193 Stahuji z Pipedrive\u2026');
+  fetch('/api/pipedrive')
+    .then(function(r) {
+      if (!r.ok) { return r.json().then(function(d) { throw new Error(d.error || ('HTTP ' + r.status)); }); }
+      return r.json();
+    })
     .then(function(d) {
-      if (d.record) {
-        var rec = d.record;
-        if (rec.cfg)      { localStorage.setItem('dcc4_cfg',        JSON.stringify(rec.cfg)); }
-        if (rec.calls)    { localStorage.setItem('dcc4_calls_v',    JSON.stringify(rec.calls)); }
-        if (rec.meetings) { localStorage.setItem('dcc4_meetings_v', JSON.stringify(rec.meetings)); }
-        if (rec.has_data) { localStorage.setItem('dcc4_has_data',   rec.has_data); }
-        loadCfg(); loadData();
-        var upd = rec.updated ? ' (' + new Date(rec.updated).toLocaleString('cs-CZ') + ')' : '';
-        toast('\u2601 Aktualizov\xe1no' + upd);
-        _doRender();
-      } else {
-        toast('Cloud: bin pr\xe1zdn\xfd nebo nedostupn\xfd', 'err');
-      }
+      var calls = d.calls || [];
+      var meetings = d.meetings || [];
+      try {
+        localStorage.setItem('dcc4_calls_v',    JSON.stringify(calls));
+        localStorage.setItem('dcc4_meetings_v', JSON.stringify(meetings));
+        localStorage.setItem('dcc4_has_data',   (calls.length > 0 || meetings.length > 0) ? '1' : '0');
+        if (d.fetchedAt) { localStorage.setItem('dcc4_fetched_at', d.fetchedAt); }
+      } catch(e) {}
+      loadCfg(); loadData();
+      var upd = d.fetchedAt ? ' (' + new Date(d.fetchedAt).toLocaleString('cs-CZ') + ')' : '';
+      toast('\u2713 Pipedrive' + upd);
+      _doRender();
     })
     .catch(function(e) { toast('Chyba: ' + e.message, 'err'); });
 }
@@ -957,6 +955,13 @@ function _initPage(renderFn) {
     st.cursor = new Date();
   }
   _syncView(); _syncChip(); renderFn();
+  // Auto-fetch z Pipedrive pokud nejsou data nebo jsou starsi nez 10 minut
+  var fetchedAt = 0;
+  try { fetchedAt = +new Date(localStorage.getItem('dcc4_fetched_at') || 0); } catch(e) {}
+  var staleMs = 10 * 60 * 1000;
+  if (!st.hasData || (Date.now() - fetchedAt) > staleMs) {
+    cloudPull();
+  }
 }
 
 function setView(v, btn) { st.view = v; saveView(v); _syncView(); _doRender(); }
@@ -984,21 +989,28 @@ function periodLabel() {
 }
 
 
-/* ════ OBCHODNÍ VÝKON ════ */
+/* ════ REPORT CC ════ */
 function _doRender() {
   var pl = document.getElementById('period-lbl');
   if (pl) { pl.textContent = periodLabel(); }
-  renderObchod();
+  renderReport();
 }
 
-function renderObchod() {
+function kpiCard(label, val, sub, clr) {
+  return '<div class="kpi-card" style="--c:' + clr + '">'
+    + '<div class="kpi-label">' + label + '</div>'
+    + '<div class="kpi-val">' + val + '</div>'
+    + '<div class="kpi-sub">' + sub + '</div></div>';
+}
+
+function renderReport() {
   var pl = document.getElementById('period-lbl');
   if (pl) { pl.textContent = periodLabel(); }
-  var body = document.getElementById('obchod-body');
+  var body = document.getElementById('report-body');
   if (!st.hasData) {
-    body.innerHTML = '<div class="empty"><div class="empty-ico">&#x1F4C8;</div>'
+    body.innerHTML = '<div class="empty"><div class="empty-ico">&#x1F4C2;</div>'
       + '<div class="empty-h">Nejsou data</div>'
-      + '<div class="empty-s">Klikn\u011bte <strong>\u21bb Z Admin</strong> nebo <strong>\u2193 Z&nbsp;cloudu</strong>.</div></div>';
+      + '<div class="empty-s">Klikn\u011bte <strong>\u21bb Z Admin</strong> nebo <strong>\u2193 Z Pipedrive</strong>.</div></div>';
     return;
   }
   var calls    = st.calls.filter(inRangeCalls);
@@ -1006,98 +1018,202 @@ function renderObchod() {
   var conn   = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Spojen\xfd hovor'; });
   var unconn = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Nespojen\xfd hovor'; });
   var sched  = meetings.filter(function(r) { return !isNeusk(r) && r['Aktivita - Typ'] === 'Sch\u016fzka'; });
-  var h = '';
-  h += obchodSegmenty(conn, unconn, sched);
-  h += obchodObchodnici(sched);
-  h += obchodKraje(sched, conn);
+  var neusk  = meetings.filter(isNeusk);
+  var totC = conn.length, totU = unconn.length, totT = totC + totU;
+  var totS = sched.length, totN = neusk.length;
+  var reach = totT > 0 ? totC / totT * 100 : 0;
+  var conv  = totC > 0 ? totS / totC * 100 : 0;
+  var isMonth = (st.view === 'month');
+  var wd = workDaysForPeriod();
+  var h = '<div class="kpi-grid">';
+  h += kpiCard('Spojen\xe9 hovory', totC, 'Dovolatelnost ' + pct(reach), 'var(--grn)');
+  h += kpiCard('Nespojen\xe9', totU, 'Celkem: ' + totT, 'var(--txt3)');
+  h += kpiCard('Sch\u016fzky', totS, 'Konverze: ' + pct(conv), 'var(--pink)');
+  h += kpiCard('Neuskute\u010dn\u011bn\xe9', totN, (totS + totN > 0 ? pct(totN / (totS + totN) * 100) : '\u2014') + ' z celku', 'var(--red)');
+  h += kpiCard('Konverze spoj.\u2192sch.', pct(conv), (totC > 0 ? Math.round(totC / Math.max(totS, 1)) : 0) + ':1', 'var(--ylw)');
+  h += kpiCard('Prac. dny', wd, cfg.operators.filter(function(o) { return o.active; }).length + ' oper\xe1tor\u016f', 'var(--pur)');
+  h += '</div>';
+  if (totT === 0 && totS === 0) {
+    h += '<div style="background:rgba(255,214,0,.07);border:1px solid rgba(255,214,0,.25);border-radius:12px;padding:14px 20px;margin-bottom:18px;display:flex;align-items:center;gap:12px">'
+      + '<span style="font-size:20px">&#x26A0;&#xFE0F;</span>'
+      + '<span style="font-size:13px;color:var(--txt2)">V tomto obdob\xed nejsou data. V pam\u011bti: <strong style="color:var(--pink)">' + st.calls.length + ' hov.</strong> a <strong style="color:var(--pink)">' + st.meetings.length + ' sch.</strong></span></div>';
+  }
+  h += renderOpTableR(conn, unconn, sched, neusk, isMonth);
+  h += '<div class="two-col">' + renderSegR(conn, unconn) + renderKonverzeR(sched, conn) + '</div>';
+  h += renderSellersR(sched);
+  if (isMonth) { h += renderBonusR(conn, sched); }
   body.innerHTML = h;
 }
 
-function obchodSegmenty(conn, unconn, sched) {
+function renderOpTableR(conn, unconn, sched, neusk, isMonth) {
+  var posLbl = {senior:'Senior', junior2:'Junior 2', junior1:'Junior 1', novacek:'Nov\xe1\u010dek'};
+  var ops = cfg.operators.filter(function(o) { return o.active; });
+  var tC = 0, tU = 0, tS = 0, tN = 0;
+  var h = '<div class="card"><div class="card-head"><div class="card-head-title">P\u0159ehled oper\xe1tor\u016f</div></div>'
+    + '<table class="dtable"><thead><tr>'
+    + '<th>Oper\xe1tor</th><th>Pozice</th><th>Spoj.</th><th>Nespoj.</th><th>Celkem</th>'
+    + '<th>Dovolat.</th><th>Sch\u016fzky</th><th>Neuskut.</th><th>Konverze</th><th>Spoj./den</th>'
+    + '</tr></thead><tbody>';
+  ops.forEach(function(op) {
+    var oc = conn.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === op.name; });
+    var ou = unconn.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === op.name; });
+    var os = sched.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
+    var on = neusk.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
+    var cN = oc.length, uN = ou.length, tN2 = cN + uN, sN = os.length, nN = on.length;
+    tC += cN; tU += uN; tS += sN; tN += nN;
+    var reach = tN2 > 0 ? cN / tN2 * 100 : 0;
+    var conv  = cN > 0 ? sN / cN * 100 : 0;
+    var days = new Set(oc.map(function(r) { return (r['Aktivita - \u010cas aktualizace'] || '').slice(0, 10); }).filter(function(d) { return d.length === 10; })).size;
+    var cpd = days > 0 ? cN / days : 0;
+    var ratio = op.planD > 0 ? cpd / op.planD : 0;
+    var cpdCls = ratio >= 1 ? 'pill-grn' : ratio >= 0.8 ? 'pill-ylw' : cpd > 0 ? 'pill-red' : 'pill-na';
+    h += '<tr><td>' + op.name + '</td>'
+      + '<td><span class="pos pos-' + op.pos + '">' + (posLbl[op.pos] || op.pos) + '</span></td>'
+      + '<td>' + cN + '</td><td>' + uN + '</td><td>' + tN2 + '</td>'
+      + '<td>' + pct(reach) + '</td>'
+      + '<td style="color:var(--pink)">' + sN + '</td>'
+      + '<td>' + (nN > 0 ? '<span class="pill pill-red">' + nN + '</span>' : '<span style="color:var(--txt3)">0</span>') + '</td>'
+      + '<td>' + (cN > 0 ? pct(conv) : '\u2014') + '</td>'
+      + '<td><span class="pill ' + cpdCls + '">' + cpd.toFixed(1) + '</span></td></tr>';
+  });
+  var totT = tC + tU;
+  h += '<tr style="font-weight:700;border-top:2px solid var(--bdr2)">'
+    + '<td colspan="2" style="color:var(--txt3);font-size:11px;font-family:var(--mono)">CELKEM</td>'
+    + '<td>' + tC + '</td><td>' + tU + '</td><td>' + totT + '</td>'
+    + '<td style="color:var(--grn)">' + pct(totT > 0 ? tC / totT * 100 : 0) + '</td>'
+    + '<td style="color:var(--pink)">' + tS + '</td>'
+    + '<td style="color:' + (tN > 0 ? 'var(--red)' : 'var(--txt3)') + '">' + tN + '</td>'
+    + '<td style="color:var(--ylw)">' + pct(tC > 0 ? tS / tC * 100 : 0) + '</td><td></td></tr>'
+    + '</tbody></table></div>';
+  return h;
+}
+
+function renderSegR(conn, unconn) {
   var map = {};
   conn.concat(unconn).forEach(function(r) {
     var s = getPrimary(r['Organizace - \u0160t\xedtek']);
-    if (!map[s]) { map[s] = {c: 0, u: 0, sch: 0}; }
+    if (!map[s]) { map[s] = {c: 0, u: 0}; }
     if (r['Aktivita - Typ'] === 'Spojen\xfd hovor') { map[s].c++; } else { map[s].u++; }
-  });
-  sched.forEach(function(r) {
-    var s = getPrimary(r['Organizace - \u0160t\xedtek']);
-    if (!map[s]) { map[s] = {c: 0, u: 0, sch: 0}; }
-    map[s].sch++;
   });
   var entries = Object.keys(map).map(function(s) {
     var v = map[s]; var t = v.c + v.u;
-    return {seg: s, total: t, c: v.c, u: v.u, sch: v.sch,
-            reach: t > 0 ? v.c / t * 100 : 0, conv: v.c > 0 ? v.sch / v.c * 100 : 0};
+    return {seg: s, total: t, c: v.c, reach: t > 0 ? v.c / t * 100 : 0};
   }).sort(function(a, b) { return b.total - a.total; });
-  var h = '<div class="card"><div class="card-head">'
-    + '<div class="card-head-title">Segmenty \u2014 vol\xe1n\xed a sch\u016fzky</div></div>'
-    + '<table class="dtable"><thead><tr>'
-    + '<th>Segment</th><th>Spojen\xe9</th><th>Nespojen\xe9</th><th>Celkem</th>'
-    + '<th>Dovolat.</th><th>Sch\u016fzky</th><th>Konverze</th></tr></thead><tbody>';
-  entries.forEach(function(e) {
-    h += '<tr><td>' + e.seg + '</td><td style="color:var(--blu)">' + e.c + '</td>'
-      + '<td style="color:var(--txt3)">' + e.u + '</td><td>' + e.total + '</td>'
-      + '<td>' + pct(e.reach) + '</td>'
-      + '<td style="color:var(--pink)">' + e.sch + '</td>'
-      + '<td>' + (e.c > 0 ? pct(e.conv) : '\u2014') + '</td></tr>';
+  var maxT = entries.length > 0 ? entries[0].total : 1;
+  var h = '<div class="card" style="margin-bottom:0"><div class="card-head">'
+    + '<div class="card-head-title">Dovolatelnost dle segmentu</div></div><div class="bar-list">';
+  entries.slice(0, 10).forEach(function(e) {
+    var clr = e.reach >= 70 ? 'var(--grn)' : e.reach >= 50 ? 'var(--pink)' : 'var(--ylw)';
+    h += '<div class="bar-row"><span class="bar-name">' + e.seg + '</span>'
+      + '<div class="bar-track"><div class="bar-fill" style="width:' + e.reach + '%;background:' + clr + '"></div></div>'
+      + '<span class="bar-num">' + pct(e.reach) + '</span>'
+      + '<span class="bar-num" style="color:var(--txt3)">' + e.total + '</span></div>';
   });
-  return h + '</tbody></table></div>';
+  return h + '</div></div>';
 }
 
-function obchodObchodnici(sched) {
+function renderKonverzeR(sched, conn) {
+  var cM = {}, sM = {};
+  conn.forEach(function(r) { var s = getPrimary(r['Organizace - \u0160t\xedtek']); cM[s] = (cM[s] || 0) + 1; });
+  sched.forEach(function(r) { var s = getPrimary(r['Organizace - \u0160t\xedtek']); sM[s] = (sM[s] || 0) + 1; });
+  var keys = Object.keys(Object.assign({}, cM, sM));
+  var entries = keys.map(function(s) {
+    return {seg: s, c: cM[s] || 0, s: sM[s] || 0, conv: cM[s] > 0 ? (sM[s] || 0) / cM[s] * 100 : 0};
+  }).filter(function(e) { return e.c > 0 || e.s > 0; }).sort(function(a, b) { return b.s - a.s; });
+  var h = '<div class="card" style="margin-bottom:0"><div class="card-head">'
+    + '<div class="card-head-title">Konverze dle segmentu</div></div><div class="bar-list">';
+  entries.slice(0, 10).forEach(function(e) {
+    var clr = e.conv >= 15 ? 'var(--grn)' : e.conv >= 8 ? 'var(--pink)' : 'var(--ylw)';
+    h += '<div class="bar-row"><span class="bar-name">' + e.seg + '</span>'
+      + '<div class="bar-track"><div class="bar-fill" style="width:' + Math.min(e.conv * 3, 100) + '%;background:' + clr + '"></div></div>'
+      + '<span class="bar-num">' + pct(e.conv) + '</span>'
+      + '<span class="bar-num" style="color:var(--pink)">' + e.s + '</span></div>';
+  });
+  return h + '</div></div>';
+}
+
+function renderSellersR(sched) {
   var opSet = {};
   cfg.operators.forEach(function(o) { opSet[o.name] = true; });
-  var map = {};
+  var cnt = {};
   sched.forEach(function(r) {
-    var seller = r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'];
-    var caller = r['Aktivita - Autor'];
-    if (!seller || opSet[seller]) { return; }
-    if (!map[seller]) { map[seller] = {total: 0, byOp: {}}; }
-    map[seller].total++;
-    map[seller].byOp[caller] = (map[seller].byOp[caller] || 0) + 1;
+    var s = r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'];
+    if (s && !opSet[s]) { cnt[s] = (cnt[s] || 0) + 1; }
   });
-  var sorted = Object.keys(map).sort(function(a, b) { return map[b].total - map[a].total; });
+  var sorted = Object.keys(cnt).sort(function(a, b) { return cnt[b] - cnt[a]; });
   if (!sorted.length) { return ''; }
-  var maxT = map[sorted[0]].total;
-  var h = '<div class="card"><div class="card-head">'
-    + '<div class="card-head-title">Sch\u016fzky dle obchodn\xedka</div></div>'
+  var h = '<div class="card"><div class="card-head"><div class="card-head-title">Sch\u016fzky dle obchodn\xedka</div></div>'
     + '<div class="seller-grid">';
   sorted.forEach(function(s) {
-    var d = map[s];
-    var ops = Object.keys(d.byOp).map(function(op) {
-      return '<div style="font-size:10px;color:var(--txt3);font-family:var(--mono)">' + op + ': ' + d.byOp[op] + '</div>';
-    }).join('');
-    h += '<div class="seller-card">'
-      + '<div class="seller-name">' + s + '</div>'
-      + '<div class="seller-big">' + d.total + '</div>'
-      + '<div class="seller-lbl">sch\u016fzek</div>'
-      + (ops ? '<div style="margin-top:8px">' + ops + '</div>' : '')
-      + '</div>';
+    h += '<div class="seller-card"><div class="seller-name">' + s + '</div>'
+      + '<div class="seller-big">' + cnt[s] + '</div>'
+      + '<div class="seller-lbl">sch\u016fzek</div></div>';
   });
   return h + '</div></div>';
 }
 
-function obchodKraje(sched, conn) {
-  var krajMap = {};
-  sched.forEach(function(r) {
-    var k = r['Organizace - Kraj'] || 'Nezn\xe1m\xfd';
-    krajMap[k] = (krajMap[k] || 0) + 1;
-  });
-  var sorted = Object.keys(krajMap).sort(function(a, b) { return krajMap[b] - krajMap[a]; });
-  if (!sorted.length) { return ''; }
-  var maxK = krajMap[sorted[0]];
+function renderBonusR(conn, sched) {
+  var d = st.cursor, yr = d.getFullYear(), mo = d.getMonth() + 1;
+  var monthKey = getMonthKey(d);
+  var fond = workdaysInMonth(yr, mo);
+  var soFar = workdaysSoFar(yr, mo);
+  var posLbl = {senior:'Senior', junior2:'Junior 2', junior1:'Junior 1', novacek:'Nov\xe1\u010dek'};
+  var ops = cfg.operators.filter(function(o) { return o.active; });
+  var totFinal = 0, totRaw = 0;
   var h = '<div class="card"><div class="card-head">'
-    + '<div class="card-head-title">Sch\u016fzky dle kraje</div></div><div class="bar-list">';
-  sorted.forEach(function(k) {
-    h += '<div class="bar-row"><span class="bar-name">' + k + '</span>'
-      + '<div class="bar-track"><div class="bar-fill" style="background:var(--blu);width:' + krajMap[k] / maxK * 100 + '%"></div></div>'
-      + '<span class="bar-num" style="color:var(--blu)">' + krajMap[k] + '</span></div>';
+    + '<div class="card-head-title">Pln\u011bn\xed KPI a odm\u011bny \u2014 ' + CZ_MONTH_NAMES[d.getMonth()] + ' ' + yr + '</div>'
+    + '<div style="font-family:var(--mono);font-size:10px;color:var(--txt3)">fond: ' + fond + ' dn\xed \xb7 k dnes: ' + soFar + '</div>'
+    + '</div>'
+    + '<table class="dtable"><thead><tr>'
+    + '<th>Oper\xe1tor</th><th>Pozice</th><th>Odprac.</th>'
+    + '<th>Pl\xe1n sch.</th><th>Sch\u016fzky</th><th>KPI%</th>'
+    + '<th>Pl\xe1n/den</th><th>Spoj./den</th><th>KPI%</th>'
+    + '<th>Absence</th><th>Brutto</th><th>Kr\xe1cen\xed</th><th>Bonus</th>'
+    + '</tr></thead><tbody>';
+  ops.forEach(function(op) {
+    var oc = conn.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === op.name; });
+    var os = sched.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
+    var cN = oc.length, sN = os.length;
+    var worked = getWorkedDays(op.name, monthKey);
+    var planMNet = fond > 0 ? Math.round(op.planM / fond * worked) : op.planM;
+    var cpd = worked > 0 ? cN / worked : 0;
+    var bonus = calcBonus(op.pos, cN, cpd, sN, worked, fond);
+    var absence = Math.max(0, fond - worked);
+    var absCls = absence <= 5 ? 'pill-grn' : absence <= 10 ? 'pill-ylw' : 'pill-red';
+    var kpiM = sN / Math.max(planMNet, 1);
+    var kpiD = cpd / Math.max(op.planD, 1);
+    if (bonus.final != null) { totFinal += bonus.final; totRaw += (bonus.raw || 0); }
+    if (op.pos === 'novacek') {
+      h += '<tr><td>' + op.name + '</td><td><span class="pos pos-novacek">Nov\xe1\u010dek</span></td>'
+        + '<td>' + worked + '/' + fond + '</td>'
+        + '<td colspan="6" style="color:var(--txt3);font-size:11px;text-align:center">Odm\u011bna za testy \u2014 ru\u010dn\xed</td>'
+        + '<td><span class="pill ' + absCls + '">' + absence + 'd</span></td>'
+        + '<td colspan="2">\u2014</td><td style="color:var(--txt3)">max 2 000 K\u010d</td></tr>';
+      return;
+    }
+    var kracPill = bonus.kraceniPct === 0
+      ? '<span class="pill pill-grn">0 %</span>'
+      : '<span class="pill pill-' + (bonus.kraceniPct >= 100 ? 'red' : 'ylw') + '">\u2212' + bonus.kraceniPct + ' %</span>';
+    h += '<tr><td>' + op.name + '</td>'
+      + '<td><span class="pos pos-' + op.pos + '">' + (posLbl[op.pos] || op.pos) + '</span></td>'
+      + '<td>' + worked + '<span style="color:var(--txt3);font-size:10px">/' + fond + '</span></td>'
+      + '<td>' + planMNet + '</td><td>' + sN + '</td><td>' + kpiPill(kpiM) + '</td>'
+      + '<td>' + op.planD + '</td><td>' + cpd.toFixed(1) + '</td><td>' + kpiPill(kpiD) + '</td>'
+      + '<td><span class="pill ' + absCls + '">' + absence + 'd</span></td>'
+      + '<td>' + (bonus.raw != null ? bonus.raw.toLocaleString('cs-CZ') + ' K\u010d<span style="font-size:9px;color:var(--txt3);display:block">A:' + (bonus.bonA || 0) + '+B:' + (bonus.bonB || 0) + '</span>' : '\u2014') + '</td>'
+      + '<td>' + kracPill + '</td>'
+      + '<td style="' + (bonus.final > 0 ? 'color:var(--grn);font-weight:700' : 'color:var(--txt3)') + '">'
+      + (bonus.final != null ? bonus.final.toLocaleString('cs-CZ') + ' K\u010d' : '\u2014') + '</td></tr>';
   });
-  return h + '</div></div>';
+  h += '<tr style="font-weight:700;border-top:2px solid var(--bdr2)">'
+    + '<td colspan="10" style="color:var(--txt3);font-family:var(--mono);font-size:11px">CELKEM</td>'
+    + '<td style="color:var(--txt2)">' + totRaw.toLocaleString('cs-CZ') + ' K\u010d</td><td></td>'
+    + '<td style="color:var(--grn);font-size:16px;font-weight:800">' + totFinal.toLocaleString('cs-CZ') + ' K\u010d</td>'
+    + '</tr></tbody></table></div>';
+  return h;
 }
 
-window.addEventListener('load', function() { _initPage(renderObchod); });
+window.addEventListener('load', function() { _initPage(renderReport); });
 
 </script>
 </body></html>

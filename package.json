@@ -1,0 +1,9 @@
+{
+  "name": "digiday-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DigiDay performance dashboard with live Pipedrive data",
+  "engines": {
+    "node": "20.x"
+  }
+}

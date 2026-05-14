@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="cs"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>DigiDay · Jednotlivci</title>
+<title>DigiDay · Tým</title>
 <style>
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -443,10 +443,10 @@ body {
   <a href="digiday-index.html" style="text-decoration:none"><div class="topbar-logo">DIGI<span class="brand">DAY</span></div></a>
   <div class="nav-pills" style="margin-left:16px">
     <a href="digiday-index.html" class="nav-pill ">&#x2302; Hub</a>
-    <a href="digiday-tym.html" class="nav-pill ">&#x1F3AF; T&#xFD;m</a>
+    <a href="digiday-tym.html" class="nav-pill act">&#x1F3AF; T&#xFD;m</a>
     <a href="digiday-report.html" class="nav-pill ">&#x1F4DE; Report CC</a>
     <a href="digiday-obchod.html" class="nav-pill ">&#x1F4C8; Obchodn&#xED;</a>
-    <a href="digiday-jednotlivci.html" class="nav-pill act">&#x1F464; Jednotlivci</a>
+    <a href="digiday-jednotlivci.html" class="nav-pill ">&#x1F464; Jednotlivci</a>
   </div>
   <div class="topbar-spacer"></div>
   <div style="display:flex;align-items:center;gap:8px"><span id="chip-view" style="font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:6px;background:var(--sur2);border:1px solid var(--bdr2);color:var(--txt3)">M&#x11B;s&#xED;c</span><div id="chip-data" style="display:none;font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:6px;background:var(--sur2);border:1px solid rgba(0,230,118,.3);color:var(--grn)">&#x25CF; Data OK</div><a href="digiday-admin.html" class="nav-link admin">&#x2699;&#xFE0F; Admin</a></div>
@@ -465,29 +465,17 @@ body {
   <div class="strip-div"></div>
   <button class="demo-btn" onclick="cloudPull()"
     style="border-color:rgba(64,196,255,.4);color:var(--blu)"
-    title="St&#xe1;hne data z JSONbin cloudu (funguje odkudkoliv)">&#x2193; Z&nbsp;cloudu</button>
+    title="Stáhne data z Pipedrive (live)">↓ Z Pipedrive</button>
 </div>
-<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap">
-  <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--txt3)">Operátor:</div>
-  <select id="op-selector" onchange="selectOp(this.value)"
-    style="background:var(--sur2);border:1px solid var(--bdr2);color:var(--txt);font-family:var(--font);font-size:14px;font-weight:700;padding:8px 16px;border-radius:var(--r);outline:none;cursor:pointer;min-width:220px">
-    <option value="">— Vyberte operátora —</option>
-  </select>
-</div>
-<div class="period-bar">
-  <div class="view-seg">
-    <button class="vseg" onclick="setView('day',this)">Den</button>
-    <button class="vseg" onclick="setView('week',this)">T&#xFD;den</button>
-    <button class="vseg act" onclick="setView('month',this)">M&#x11B;s&#xED;c</button>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px">
+  <div class="month-nav">
+    <button class="month-nav-btn" onclick="navigateMonth(-1)">&#x2039;</button>
+    <div class="month-lbl" id="month-lbl">&#x2014;</div>
+    <button class="month-nav-btn" onclick="navigateMonth(1)">&#x203A;</button>
   </div>
-  <div class="period-ctrl">
-    <button class="period-nav" onclick="navigate(-1)">&#x2039;</button>
-    <div class="period-lbl" id="period-lbl">&#x2014;</div>
-    <button class="period-nav" onclick="navigate(1)">&#x203A;</button>
-    <button class="today-btn" onclick="goToday()">Dnes</button>
-  </div>
+  <div style="font-family:var(--mono);font-size:11px;color:var(--txt3)">Souhrn měsíce &middot; Všichni aktivní operátoři</div>
 </div>
-<div id="detail-body"><div class="empty"><div class="empty-ico">&#x1F464;</div><div class="empty-h">Vyberte operátora</div><div class="empty-s">Nejprve načtěte data a zvolte operátora.</div></div></div>
+<div id="tym-body"><div class="empty"><div class="empty-ico">&#x1F3AF;</div><div class="empty-h">Tým</div><div class="empty-s">Klikněte <strong>↻ Z Admin</strong> nebo <strong>↓ Z Pipedrive</strong>.</div></div></div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
@@ -919,43 +907,42 @@ function _gCC() {
 function btnLoadAdmin(btn) {
   loadCfg(); loadData();
   if (st.hasData) {
-    _syncChip(); _doRender();
+    currentMonth = getDataMaxMonth();
+    saveMonth(currentMonth);
+    _syncChip();
+    renderTym();
     if (btn) {
-      btn.textContent = '\u2713 Na\u010dteno (' + st.calls.length + ' hov.)';
-      setTimeout(function() { btn.innerHTML = '&#x21BB; Z Admin'; }, 3000);
-    }
-  } else {
-    // Data nejsou v localStorage tohoto prohlížeče
-    if (btn) {
-      btn.textContent = '\u26A0 Pr\xe1zdn\xe9';
+      btn.textContent = '✓ ' + st.calls.length + ' hov., ' + st.meetings.length + ' sch. (' + currentMonth + ')';
       setTimeout(function() { btn.innerHTML = '&#x21BB; Z Admin'; }, 4000);
     }
-    toast('\u26A0 Data nejsou v tomto prohl\xed\u017ee\u010di. '
-      + 'Nahrajte CSV v Admin nebo pou\u017eijte \u2193 Z\xa0cloudu.', 'err');
+  } else {
+    if (btn) {
+      btn.textContent = '⚠ Prázdné';
+      setTimeout(function() { btn.innerHTML = '&#x21BB; Z Admin'; }, 4000);
+    }
+    toast('⚠ Data nejsou v tomto prohlížeči. Klikněte na ↓ Z Pipedrive pro načtení dat.', 'err');
   }
 }
 function cloudPull() {
-  var cc = _gCC();
-  if (!cc.binId) { toast('Nastavte Cloud Sync v Admin.', 'err'); return; }
-  var hdrs = {'Content-Type': 'application/json'};
-  if (cc.apiKey) { hdrs['X-Master-Key'] = cc.apiKey; }
-  toast('\u2193 Stahuj\xed z cloudu\u2026');
-  fetch('https://api.jsonbin.io/v3/b/' + cc.binId + '/latest', {headers: hdrs})
-    .then(function(r) { return r.json(); })
+  toast('\u2193 Stahuji z Pipedrive\u2026');
+  fetch('/api/pipedrive')
+    .then(function(r) {
+      if (!r.ok) { return r.json().then(function(d) { throw new Error(d.error || ('HTTP ' + r.status)); }); }
+      return r.json();
+    })
     .then(function(d) {
-      if (d.record) {
-        var rec = d.record;
-        if (rec.cfg)      { localStorage.setItem('dcc4_cfg',        JSON.stringify(rec.cfg)); }
-        if (rec.calls)    { localStorage.setItem('dcc4_calls_v',    JSON.stringify(rec.calls)); }
-        if (rec.meetings) { localStorage.setItem('dcc4_meetings_v', JSON.stringify(rec.meetings)); }
-        if (rec.has_data) { localStorage.setItem('dcc4_has_data',   rec.has_data); }
-        loadCfg(); loadData();
-        var upd = rec.updated ? ' (' + new Date(rec.updated).toLocaleString('cs-CZ') + ')' : '';
-        toast('\u2601 Aktualizov\xe1no' + upd);
-        _doRender();
-      } else {
-        toast('Cloud: bin pr\xe1zdn\xfd nebo nedostupn\xfd', 'err');
-      }
+      var calls = d.calls || [];
+      var meetings = d.meetings || [];
+      try {
+        localStorage.setItem('dcc4_calls_v',    JSON.stringify(calls));
+        localStorage.setItem('dcc4_meetings_v', JSON.stringify(meetings));
+        localStorage.setItem('dcc4_has_data',   (calls.length > 0 || meetings.length > 0) ? '1' : '0');
+        if (d.fetchedAt) { localStorage.setItem('dcc4_fetched_at', d.fetchedAt); }
+      } catch(e) {}
+      loadCfg(); loadData();
+      var upd = d.fetchedAt ? ' (' + new Date(d.fetchedAt).toLocaleString('cs-CZ') + ')' : '';
+      toast('\u2713 Pipedrive' + upd);
+      _doRender();
     })
     .catch(function(e) { toast('Chyba: ' + e.message, 'err'); });
 }
@@ -994,6 +981,13 @@ function _initPage(renderFn) {
     st.cursor = new Date();
   }
   _syncView(); _syncChip(); renderFn();
+  // Auto-fetch z Pipedrive pokud nejsou data nebo jsou starsi nez 10 minut
+  var fetchedAt = 0;
+  try { fetchedAt = +new Date(localStorage.getItem('dcc4_fetched_at') || 0); } catch(e) {}
+  var staleMs = 10 * 60 * 1000;
+  if (!st.hasData || (Date.now() - fetchedAt) > staleMs) {
+    cloudPull();
+  }
 }
 
 function setView(v, btn) { st.view = v; saveView(v); _syncView(); _doRender(); }
@@ -1021,178 +1015,235 @@ function periodLabel() {
 }
 
 
-/* ════ JEDNOTLIVCI ════ */
-var selectedOp = null;
+/* ════ TÝM JS ════ */
+var currentMonth = getMonthKey(new Date());
 
 function _doRender() {
-  var pl = document.getElementById('period-lbl');
-  if (pl) { pl.textContent = periodLabel(); }
-  renderJednotlivec();
+  var s = loadMonth();
+  if (s) {
+    var hasData = st.calls.some(function(r) {
+      return (r['Aktivita - Čas aktualizace'] || '').slice(0,7) === s;
+    });
+    currentMonth = hasData ? s : getDataMaxMonth();
+  } else {
+    currentMonth = getDataMaxMonth();
+  }
+  saveMonth(currentMonth);
+  renderTym();
 }
 
-function selectOp(name) { selectedOp = name; renderJednotlivec(); }
-
-function rebuildOpSelector() {
-  var sel = document.getElementById('op-selector');
-  if (!sel) { return; }
-  var names = {};
-  cfg.operators.filter(function(o) { return o.active; }).forEach(function(o) { names[o.name] = true; });
-  st.calls.forEach(function(r) { var n = r['Aktivita - Přiřazeno uživateli']; if (n) { names[n] = true; } });
-  var arr = Object.keys(names).sort();
-  // Použij innerHTML místo createElement pro lepší kompatibilitu
-  var html = '<option value="">— Vyberte operátora —</option>';
-  arr.forEach(function(n) {
-    html += '<option value="' + n.replace(/"/g,'&quot;') + '">' + n.replace(/</g,'&lt;') + '</option>';
-  });
-  sel.innerHTML = html;
-  if (!selectedOp && arr.length) { selectedOp = arr[0]; }
-  if (selectedOp) { sel.value = selectedOp; }
-  renderJednotlivec();
+function detectMonth() {
+  if (st.hasData) { currentMonth = getDataMaxMonth(); } else { currentMonth = getMonthKey(new Date()); }
 }
 
-function ring(actual, plan, pctVal, clr, title, sub) {
+function navigateMonth(dir) {
+  var p = currentMonth.split('-');
+  var d = new Date(+p[0], +p[1] - 1 + dir, 1);
+  currentMonth = getMonthKey(d);
+  saveMonth(currentMonth);
+  renderTym();
+}
+
+function ringBlock(title, actual, plan, pct100, clr, sub) {
   var r = 52, circ = 2 * Math.PI * r;
-  var offset = circ - (Math.min(pctVal, 100) / 100) * circ;
-  var disp = pctVal > 999 ? '999+' : pctVal.toFixed(0);
+  var offset = circ - (Math.min(pct100, 100) / 100) * circ;
   return '<div class="ring-wrap">'
     + '<svg class="ring-svg" width="130" height="130" viewBox="0 0 130 130">'
     + '<circle class="ring-bg" cx="65" cy="65" r="' + r + '" transform="rotate(-90 65 65)"/>'
     + '<circle class="ring-fill" cx="65" cy="65" r="' + r + '" stroke="' + clr + '"'
     + ' stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '"'
     + ' transform="rotate(-90 65 65)"/>'
-    + '<text class="ring-label" x="65" y="60" font-size="20" font-weight="700">' + actual + '</text>'
-    + '<text class="ring-sub" x="65" y="78">/ ' + plan + '</text>'
+    + '<text class="ring-label" x="65" y="60" font-size="22" font-weight="700">' + actual + '</text>'
+    + '<text class="ring-sub" x="65" y="79">/ ' + plan + '</text>'
     + '</svg>'
     + '<div class="ring-title">' + title + '</div>'
-    + '<div style="font-family:var(--mono);font-size:13px;font-weight:700;color:' + clr + '">' + disp + ' %</div>'
+    + '<div style="font-family:var(--mono);font-size:12px;font-weight:700;color:' + clr + '">' + pct100.toFixed(0) + ' %</div>'
     + '<div style="font-size:11px;color:var(--txt3);text-align:center">' + sub + '</div>'
     + '</div>';
 }
 
-function renderJednotlivec() {
-  var body = document.getElementById('detail-body');
-  if (!st.hasData || !selectedOp) {
-    body.innerHTML = '<div class="empty"><div class="empty-ico">&#x1F464;</div>'
-      + '<div class="empty-h">Vyberte oper\xe1tora</div>'
-      + '<div class="empty-s">Nejprve na\u010dt\u011bte data a zvolte oper\xe1tora ze seznamu.</div></div>';
+function planBar(val, max, clr) {
+  return '<div class="prog-bar-wrap">'
+    + '<div class="prog-bar-fill" style="background:' + clr + ';width:' + Math.min(val / Math.max(max, 1) * 100, 100) + '%"></div></div>';
+}
+
+function renderTym() {
+  var lbl = document.getElementById('month-lbl');
+  if (lbl) {
+    var p = currentMonth.split('-');
+    lbl.textContent = CZ_MONTH_NAMES[+p[1] - 1] + ' ' + p[0];
+  }
+  var body = document.getElementById('tym-body');
+  if (!st.hasData) {
+    body.innerHTML = '<div class="empty"><div class="empty-ico">&#x1F3AF;</div>'
+      + '<div class="empty-h">T\xfdm</div>'
+      + '<div class="empty-s">Klikn\u011bte <strong>\u21bb Z Admin</strong> nebo <strong>\u2193 Z Pipedrive</strong>.</div></div>';
     return;
   }
-  var op = null;
-  cfg.operators.forEach(function(o) { if (o.name === selectedOp) { op = o; } });
-  if (!op) { op = {name: selectedOp, pos: 'junior1', planM: 10, planD: 20}; }
-  var posLbl = {senior:'Senior', junior2:'Junior 2', junior1:'Junior 1', novacek:'Nov\xe1\u010dek'};
-  var conn   = st.calls.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === selectedOp && r['Aktivita - Typ'] === 'Spojen\xfd hovor'; }).filter(inRangeCalls);
-  var unconn = st.calls.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === selectedOp && r['Aktivita - Typ'] === 'Nespojen\xfd hovor'; }).filter(inRangeCalls);
-  var sched  = st.meetings.filter(function(r) { return r['Aktivita - Autor'] === selectedOp && !isNeusk(r) && r['Aktivita - Typ'] === 'Sch\u016fzka'; }).filter(inRangeMeetings);
-  var neusk  = st.meetings.filter(function(r) { return r['Aktivita - Autor'] === selectedOp && isNeusk(r); }).filter(inRangeMeetings);
+  var p = currentMonth.split('-');
+  var yr = +p[0], mo = +p[1];
+  var fond = workdaysInMonth(yr, mo);
+  var soFar = workdaysSoFar(yr, mo);
+  var isCurrentMonth = (new Date().getFullYear() === yr && new Date().getMonth() + 1 === mo);
+  var todayWd = isCurrentMonth ? soFar : fond;
+  var calls = st.calls.filter(function(r) {
+    var raw = r['Aktivita - \u010cas aktualizace'] || '';
+    return raw.startsWith(currentMonth);
+  });
+  var meetings = st.meetings.filter(function(r) {
+    var raw = r['Aktivita - \u010cas p\u0159id\xe1n\xed'] || '';
+    return raw.startsWith(currentMonth);
+  });
+  var conn   = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Spojen\xfd hovor'; });
+  var unconn = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Nespojen\xfd hovor'; });
+  var sched  = meetings.filter(function(r) { return !isNeusk(r) && r['Aktivita - Typ'] === 'Sch\u016fzka'; });
+  var neusk  = meetings.filter(isNeusk);
   var totC = conn.length, totU = unconn.length, totT = totC + totU;
   var totS = sched.length, totN = neusk.length;
   var reach = totT > 0 ? totC / totT * 100 : 0;
   var conv  = totC > 0 ? totS / totC * 100 : 0;
-  var workedDays = new Set(conn.map(function(r) {
-    return (r['Aktivita - \u010cas aktualizace'] || '').slice(0, 10);
-  }).filter(function(d) { return d.length === 10; })).size;
-  var cpd = workedDays > 0 ? totC / workedDays : 0;
-  var isMonth = (st.view === 'month');
-  var d = st.cursor, yr = d.getFullYear(), mo = d.getMonth() + 1;
-  var monthKey = getMonthKey(d);
-  var fond = workdaysInMonth(yr, mo);
-  var worked2 = isMonth ? getWorkedDays(selectedOp, monthKey) : workedDays;
-  var planMNet = fond > 0 ? Math.round(op.planM / fond * worked2) : op.planM;
-  var posClr = {senior:'var(--pur)', junior2:'var(--blu)', junior1:'var(--orn)', novacek:'var(--txt3)'}[op.pos] || 'var(--pink)';
-  var parts = selectedOp.trim().split(' ');
-  var initials = (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
-  var schPct  = planMNet > 0 ? totS / planMNet * 100 : 0;
-  var cpdPct  = op.planD > 0 ? cpd / op.planD * 100 : (totC > 0 ? 100 : 0);
-  var schClr  = schPct >= 100 ? 'var(--grn)' : schPct >= 75 ? 'var(--ylw)' : 'var(--pink)';
-  var cClr    = cpdPct >= 100 ? 'var(--grn)' : cpdPct >= 80 ? 'var(--ylw)' : 'var(--red)';
-  var rClr    = reach >= 65 ? 'var(--grn)' : reach >= 50 ? 'var(--ylw)' : 'var(--red)';
-  var h = '<div style="display:flex;align-items:center;gap:20px;padding:20px 0;flex-wrap:wrap">'
-    + '<div style="width:60px;height:60px;border-radius:50%;background:' + posClr + ';display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#000;flex-shrink:0">' + initials + '</div>'
-    + '<div><div style="font-size:22px;font-weight:800;color:var(--txt)">' + selectedOp + '</div>'
-    + '<div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">'
-    + '<span class="pos pos-' + op.pos + '">' + (posLbl[op.pos] || op.pos) + '</span>'
-    + '<span style="font-family:var(--mono);font-size:11px;color:var(--txt3)">Pl\xe1n: ' + op.planM + ' sch./m\u011bs &nbsp;|&nbsp; ' + op.planD + ' spoj./den</span>'
-    + '</div></div></div>';
-  h += '<div class="card"><div class="card-head"><div class="card-head-title">&#x1F4CA; Pln\u011bn\xed \u2014 ' + periodLabel() + '</div></div>'
-    + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:16px 0;justify-items:center">'
-    + ring(totS, planMNet, schPct, schClr, 'Sch\u016fzky vs pl\xe1n', isMonth ? 'net pl\xe1n: ' + planMNet : 'za periodu')
-    + ring(cpd.toFixed(1), op.planD, cpdPct, cClr, 'Spoj./den vs pl\xe1n', workedDays + ' aktivn\xedch dn\xed')
-    + ring(pct(reach), '100 %', reach, rClr, 'Dovolatelnost', totC + ' spoj. z ' + totT)
-    + '</div>'
-    + '<div style="background:var(--sur3);border-radius:10px;padding:12px 20px;margin-top:4px;display:flex;gap:24px;flex-wrap:wrap">'
-    + '<div style="font-family:var(--mono);font-size:11px;color:var(--txt3)">Spojen\xe9: <b style="color:var(--txt)">' + totC + '</b></div>'
-    + '<div style="font-family:var(--mono);font-size:11px;color:var(--txt3)">Aktivn\xedch dn\xed: <b style="color:var(--txt)">' + workedDays + '</b></div>'
-    + '<div style="font-family:var(--mono);font-size:11px;color:var(--txt3)">&Oslash; spoj./den: <b style="color:' + cClr + '">' + cpd.toFixed(1) + '</b></div>'
-    + '<div style="font-family:var(--mono);font-size:11px;color:var(--txt3)">Pl\xe1n/den: <b style="color:var(--txt)">' + op.planD + '</b></div>'
-    + '<div style="font-family:var(--mono);font-size:11px;color:var(--txt3)">Konverze: <b style="color:var(--pink)">' + pct(conv) + '</b></div>'
-    + '</div></div>';
-  if (isMonth) {
-    var bonus = calcBonus(op.pos, totC, cpd, totS, worked2, fond);
-    var kpiM = totS / Math.max(planMNet, 1);
-    var kpiD = cpd / Math.max(op.planD, 1);
-    var bfin = bonus.final != null ? bonus.final.toLocaleString('cs-CZ') + ' K\u010d' : '\u2014';
-    h += '<div class="card"><div class="card-head"><div class="card-head-title">&#x1F3AF; KPI &amp; bonus \u2014 ' + CZ_MONTH_NAMES[d.getMonth()] + ' ' + yr + '</div></div>'
-      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">';
-    var kBox = function(l, v, s, c) {
-      return '<div style="background:var(--sur2);border:1px solid var(--bdr);border-radius:10px;padding:16px">'
-        + '<div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">' + l + '</div>'
-        + '<div style="font-family:var(--mono);font-size:24px;font-weight:700;color:' + c + '">' + v + '</div>'
-        + '<div style="font-size:11px;color:var(--txt3);margin-top:4px">' + s + '</div></div>';
-    };
-    h += kBox('KPI sch\u016fzky', pct(kpiM * 100), totS + ' / ' + planMNet + ' (net pl\xe1n)', kpiM >= 1 ? 'var(--grn)' : kpiM >= 0.8 ? 'var(--ylw)' : 'var(--red)');
-    h += kBox('KPI hovory/den', pct(kpiD * 100), cpd.toFixed(1) + ' / ' + op.planD, kpiD >= 1 ? 'var(--grn)' : kpiD >= 0.8 ? 'var(--ylw)' : 'var(--red)');
-    h += kBox('Odprac. dn\xed', worked2, 'z fondu ' + fond + ' dn\xed', 'var(--txt)');
-    h += kBox('Bonus k v\xfdplat\u011b', bfin, bonus.final != null ? 'A:' + (bonus.bonA || 0) + ' + B:' + (bonus.bonB || 0) + ' K\u010d' : 'Nov\xe1\u010dek', bonus.final > 0 ? 'var(--grn)' : 'var(--txt3)');
-    h += '</div></div>';
-  }
-  h += '<div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">'
-    + '<div class="kpi-card" style="--c:var(--blu)"><div class="kpi-label">Spojen\xe9</div><div class="kpi-val">' + totC + '</div><div class="kpi-sub">' + cpd.toFixed(1) + '/den</div></div>'
-    + '<div class="kpi-card" style="--c:var(--txt3)"><div class="kpi-label">Nespojen\xe9</div><div class="kpi-val">' + totU + '</div><div class="kpi-sub">celkem ' + totT + '</div></div>'
-    + '<div class="kpi-card" style="--c:var(--pink)"><div class="kpi-label">Sch\u016fzky</div><div class="kpi-val">' + totS + '</div><div class="kpi-sub">konverze ' + pct(conv) + '</div></div>'
-    + '<div class="kpi-card" style="--c:var(--red)"><div class="kpi-label">Neuskut.</div><div class="kpi-val">' + totN + '</div><div class="kpi-sub">' + (totS + totN > 0 ? pct(totN / (totS + totN) * 100) : '\u2014') + ' z celku</div></div>'
-    + '<div class="kpi-card" style="--c:var(--grn)"><div class="kpi-label">Dovolatelnost</div><div class="kpi-val">' + pct(reach) + '</div><div class="kpi-sub">' + workedDays + ' dn\xed</div></div>'
-    + '</div>';
-  var days = {};
-  conn.concat(unconn).forEach(function(r) {
-    var dt = (r['Aktivita - \u010cas aktualizace'] || '').slice(0, 10);
-    if (!dt || dt.length < 10) { return; }
-    if (!days[dt]) { days[dt] = {c: 0, u: 0, s: 0}; }
-    if (r['Aktivita - Typ'] === 'Spojen\xfd hovor') { days[dt].c++; } else { days[dt].u++; }
+  var ops = cfg.operators.filter(function(o) { return o.active; });
+  var totalPlanM = 0, totalPlanMNet = 0, totalPlanMFull = 0;
+  ops.forEach(function(op) {
+    var worked = getWorkedDays(op.name, currentMonth);
+    totalPlanM     += op.planM;
+    totalPlanMNet  += fond > 0 ? Math.round(op.planM / fond * worked) : op.planM;
+    totalPlanMFull += fond > 0 ? Math.round(op.planM / fond * todayWd) : op.planM;
   });
-  sched.forEach(function(r) {
-    var dt = (r['Aktivita - \u010cas p\u0159id\xe1n\xed'] || '').slice(0, 10);
-    if (!dt || dt.length < 10) { return; }
-    if (!days[dt]) { days[dt] = {c: 0, u: 0, s: 0}; }
-    days[dt].s++;
+  var schPct  = totalPlanMNet > 0 ? totS / totalPlanMNet * 100 : 0;
+  var cpdAvg  = ops.length > 0 ? totC / Math.max(todayWd * ops.length, 1) : 0;
+  var planDAvg = ops.length > 0 ? ops.reduce(function(a, o) { return a + o.planD; }, 0) / ops.length : 0;
+  var cpdPct  = planDAvg > 0 ? cpdAvg / planDAvg * 100 : 0;
+  var schClr = schPct >= 100 ? 'var(--grn)' : schPct >= 75 ? 'var(--ylw)' : 'var(--pink)';
+  var cClr   = cpdPct >= 100 ? 'var(--grn)' : cpdPct >= 80 ? 'var(--ylw)' : 'var(--red)';
+  var rClr   = reach >= 65 ? 'var(--grn)' : reach >= 50 ? 'var(--ylw)' : 'var(--red)';
+  var h = '';
+  h += '<div class="card">';
+  h += '<div class="card-head"><div class="card-head-title">Celkov\xe9 pl\xe1n\xe9 ukazatele \u2014 ' + CZ_MONTH_NAMES[mo-1] + ' ' + yr + '</div>'
+    + '<div style="font-family:var(--mono);font-size:10px;color:var(--txt3)">fond: ' + fond + ' dn\xed \xb7 k dnes: ' + soFar + '</div></div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:16px 0;justify-items:center">';
+  h += ringBlock('Sch\u016fzky vs pl\xe1n', totS, totalPlanMNet, schPct, schClr, 'net pl\xe1n: ' + totalPlanMNet);
+  h += ringBlock('Spoj. hovory/den', cpdAvg.toFixed(1), planDAvg.toFixed(0), cpdPct, cClr, totC + ' spoj. celkem');
+  h += ringBlock('Dovolatelnost', pct(reach), '100 %', reach, rClr, totC + ' spoj. z ' + totT);
+  h += '</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px">';
+  var planBox = function(l, v, s, c) {
+    return '<div style="background:var(--sur2);border:1px solid var(--bdr);border-radius:10px;padding:14px 16px">'
+      + '<div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--txt3);margin-bottom:6px">' + l + '</div>'
+      + '<div style="font-family:var(--mono);font-size:22px;font-weight:700;color:' + c + '">' + v + '</div>'
+      + '<div style="font-size:11px;color:var(--txt3);margin-top:4px">' + s + '</div></div>';
+  };
+  h += planBox('Pln\xfd pl\xe1n', totalPlanM + ' sch.', 'sou\u010det pl\xe1n\u016f v\u0161ech op.', 'var(--txt)');
+  h += planBox('\u010cist\xfd pl\xe1n (dle odprac.)', totalPlanMNet + ' sch.', 'dle odpracovan\xfdch dn\xed', 'var(--ylw)');
+  h += planBox('Projekce (k dnes)', totalPlanMFull + ' sch.', 'dle pracovn\xedch dn\xed k dnes', 'var(--blu)');
+  h += '</div></div>';
+  h += '<div class="hfunnel">';
+  var funStep = function(ico, lbl, val, pct2, hasArrow) {
+    var clr = typeof pct2 === 'number' ? (pct2 >= 70 ? 'var(--grn)' : pct2 >= 50 ? 'var(--ylw)' : 'var(--red)') : 'var(--pink)';
+    return '<div class="hfunnel-step">'
+      + '<div class="hfunnel-ico">' + ico + '</div>'
+      + '<div class="hfunnel-lbl">' + lbl + '</div>'
+      + '<div class="hfunnel-val">' + val + '</div>'
+      + (typeof pct2 === 'number' ? '<div class="hfunnel-pct" style="color:' + clr + '">' + pct(pct2) + '</div>' : '<div class="hfunnel-pct" style="color:var(--pink)">' + pct2 + '</div>')
+      + (hasArrow ? '<div class="hfunnel-arrow">›</div>' : '')
+      + '</div>';
+  };
+  h += funStep('&#x1F4DE;', 'Celkem vol\xe1n\xed', totT, null, true);
+  h += funStep('&#x2705;', 'Spojen\xe9 hovory', totC, reach, true);
+  h += funStep('&#x1F4C5;', 'Sch\u016fzky', totS, conv, true);
+  h += funStep('&#x274C;', 'Neuskute\u010dn\u011bn\xe9', totN, null, false);
+  h += '</div>';
+  h += '<div class="card"><div class="card-head"><div class="card-head-title">Oper\xe1to\u0159i</div></div>';
+  h += '<div class="op-mini-grid">';
+  ops.forEach(function(op) {
+    var oc = conn.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === op.name; });
+    var os = sched.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
+    var cN = oc.length, sN = os.length;
+    var worked = getWorkedDays(op.name, currentMonth);
+    var planMNet = fond > 0 ? Math.round(op.planM / fond * worked) : op.planM;
+    var cpd = worked > 0 ? cN / worked : 0;
+    var schRat = planMNet > 0 ? sN / planMNet : 0;
+    var cpdRat = op.planD > 0 ? cpd / op.planD : 0;
+    var initials = op.name.split(' ').map(function(w) { return w[0] || ''; }).slice(0, 2).join('').toUpperCase();
+    var posClr = {senior:'var(--pur)', junior2:'var(--blu)', junior1:'var(--orn)', novacek:'var(--txt3)'}[op.pos] || 'var(--pink)';
+    var schClr2 = schRat >= 1 ? 'var(--grn)' : schRat >= 0.8 ? 'var(--ylw)' : 'var(--red)';
+    var cClr2   = cpdRat >= 1 ? 'var(--grn)' : cpdRat >= 0.8 ? 'var(--ylw)' : 'var(--red)';
+    h += '<div class="op-mini-card">'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + '<div style="width:32px;height:32px;border-radius:50%;background:' + posClr + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#000;flex-shrink:0">' + initials + '</div>'
+      + '<div class="op-mini-name">' + op.name + '</div></div>'
+      + '<div class="op-mini-kpi">'
+      + '<div class="op-mini-row"><span>Sch\u016fzky</span><b style="color:' + schClr2 + '">' + sN + '/' + planMNet + '</b></div>'
+      + planBar(sN, planMNet, schClr2)
+      + '<div class="op-mini-row"><span>Spoj./den</span><b style="color:' + cClr2 + '">' + cpd.toFixed(1) + '/' + op.planD + '</b></div>'
+      + planBar(cpd, op.planD, cClr2)
+      + '<div class="op-mini-row"><span>Odprac.</span><b>' + worked + '/' + fond + ' dn.</b></div>'
+      + '</div></div>';
   });
-  var sortedDays = Object.keys(days).sort();
-  if (sortedDays.length) {
-    var maxC = 1;
-    sortedDays.forEach(function(dt) { var t = days[dt].c + days[dt].u; if (t > maxC) { maxC = t; } });
-    h += '<div class="card"><div class="card-head"><div class="card-head-title">&#x1F4C5; Denn\xed aktivita</div></div>'
-      + '<table class="dtable"><thead><tr>'
-      + '<th>Datum</th><th>Den</th><th>Spoj.</th><th>Nespoj.</th><th>Celkem</th><th>Dovolat.</th><th>Sch.</th><th>Vizualizace</th>'
-      + '</tr></thead><tbody>';
-    sortedDays.forEach(function(dt) {
-      var v = days[dt]; var tot = v.c + v.u; var r2 = tot > 0 ? v.c / tot * 100 : 0;
-      var dow = new Date(dt).getDay();
-      h += '<tr><td style="font-family:var(--mono)">' + dt + '</td>'
-        + '<td style="color:var(--txt3)">' + CZ_DAY_NAMES[dow] + '</td>'
-        + '<td style="color:var(--blu)">' + v.c + '</td><td>' + v.u + '</td><td>' + tot + '</td>'
-        + '<td>' + pct(r2) + '</td><td style="color:var(--pink)">' + (v.s || 0) + '</td>'
-        + '<td><div style="display:flex;gap:2px;align-items:center">'
-        + '<div style="width:' + Math.round(v.c / maxC * 80) + 'px;height:8px;background:var(--blu);border-radius:2px;min-width:2px"></div>'
-        + (v.s ? '<div style="width:' + (v.s * 6) + 'px;height:8px;background:var(--pink);border-radius:2px"></div>' : '')
-        + '</div></td></tr>';
-    });
-    h += '</tbody></table></div>';
-  }
+  h += '</div></div>';
+  h += renderActivityCalendar(yr, mo, conn, sched);
   body.innerHTML = h;
 }
 
+function renderActivityCalendar(yr, mo, conn, sched) {
+  var dayData = {};
+  conn.forEach(function(r) {
+    var dt = (r['Aktivita - \u010cas aktualizace'] || '').slice(0, 10);
+    if (dt.length === 10) { dayData[dt] = dayData[dt] || {c: 0, s: 0}; dayData[dt].c++; }
+  });
+  sched.forEach(function(r) {
+    var dt = (r['Aktivita - \u010cas p\u0159id\xe1n\xed'] || '').slice(0, 10);
+    if (dt.length === 10) { dayData[dt] = dayData[dt] || {c: 0, s: 0}; dayData[dt].s++; }
+  });
+  var today = new Date(); var todayStr = today.toISOString().slice(0, 10);
+  var firstDay = new Date(yr, mo - 1, 1).getDay();
+  var daysInMo = new Date(yr, mo, 0).getDate();
+  var startOffset = (firstDay + 6) % 7;
+  var h = '<div class="card"><div class="card-head"><div class="card-head-title">&#x1F4C5; Aktivita v m\u011bs\xedci</div></div>'
+    + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px">';
+  ['Po','Út','St','Čt','Pá','So','Ne'].forEach(function(d) {
+    h += '<div style="text-align:center;font-family:var(--mono);font-size:9px;color:var(--txt3);padding:4px 0">' + d + '</div>';
+  });
+  h += '</div><div class="cal-grid">';
+  for (var i = 0; i < startOffset; i++) { h += '<div class="cal-day empty"></div>'; }
+  for (var day = 1; day <= daysInMo; day++) {
+    var dt = yr + '-' + String(mo).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    var dow = (new Date(yr, mo - 1, day).getDay() + 6) % 7;
+    var isWe = dow >= 5;
+    var isHol = isHoliday(dt);
+    var data = dayData[dt];
+    var isToday = dt === todayStr;
+    var cls = 'cal-day' + (isWe ? ' weekend' : isHol ? ' holiday' : data ? ' has-data' : isWorkday(new Date(dt + 'T12:00:00')) ? ' workday' : ' empty');
+    if (isToday) { cls += ' today'; }
+    h += '<div class="' + cls + '" title="' + dt + (data ? ': ' + data.c + ' spoj., ' + data.s + ' sch.' : '') + '">'
+      + '<div class="cal-day-num">' + day + '</div>'
+      + (data && data.s > 0 ? '<div class="cal-day-dot"></div>' : '')
+      + '</div>';
+  }
+  return h + '</div></div>';
+}
+
 window.addEventListener('load', function() {
-  _initPage(function() { rebuildOpSelector(); });
+  loadCfg(); loadData();
+  var saved = loadMonth();
+  if (saved) {
+    var hasData = st.calls.some(function(r) {
+      return (r['Aktivita - Čas aktualizace'] || '').slice(0,7) === saved;
+    });
+    currentMonth = hasData ? saved : getDataMaxMonth();
+  } else {
+    currentMonth = getDataMaxMonth();
+  }
+  saveMonth(currentMonth);
+  var fi = document.getElementById('fn-info');
+  if (st.hasData) {
+    var cd = document.getElementById('chip-data');
+    if (cd) { cd.style.display = 'flex'; }
+    if (fi) { fi.textContent = '☁ ' + st.calls.length + ' hovůrů · ' + st.meetings.length + ' schůzek'; }
+  } else {
+    if (fi) { fi.textContent = '⚠ Klikněte ↻ Z Admin nebo ↓ Z Pipedrive'; }
+  }
+  renderTym();
 });
 
 </script>
