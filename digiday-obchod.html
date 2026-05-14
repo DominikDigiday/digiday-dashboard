@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="cs"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DigiDay · Obchodní výkon</title>
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* DigiDay Brand */
+  --pink:      #FF009E;
+  --pink2:     #FF40B8;
+  --pink-dim:  rgba(255,0,158,.12);
+  --pink-glow: rgba(255,0,158,.25);
+
+  /* Background layers */
+  --bg:    #000000;
+  --sur1:  #111111;
+  --sur2:  #1A1A1A;
+  --sur3:  #222222;
+  --bdr:   #2a2a2a;
+  --bdr2:  #333333;
+
+  /* Text */
+  --txt:   #FFFFFF;
+  --txt2:  #aaaaaa;
+  --txt3:  #555555;
+
+  /* Status colors */
+  --grn:  #00E676;
+  --red:  #FF5252;
+  --ylw:  #FFD600;
+  --blu:  #40C4FF;
+  --orn:  #FF9100;
+  --pur:  #AB47BC;
+
+  /* Font */
+  --font: 'Poppins', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+
+  --r:  8px;
+  --r2: 14px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--txt);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex; align-items: center;
+  padding: 0 32px; height: 58px;
+  background: var(--sur1);
+  border-bottom: 1px solid var(--bdr);
+  position: sticky; top: 0; z-index: 200;
+  gap: 16px;
+}
+
+.topbar-logo {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--txt);
+}
+.topbar-logo .brand { color: var(--pink); }
+
+.topbar-spacer { flex: 1; }
+
+/* ── NAV ── */
+.nav-pills {
+  display: flex; gap: 3px;
+  background: var(--sur2);
+  border: 1px solid var(--bdr2);
+  border-radius: var(--r);
+  padding: 3px;
+}
+.nav-pill {
+  display: inline-flex; align-items: center;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer; border: none;
+  background: transparent;
+  color: var(--txt2);
+  text-decoration: none;
+  transition: all .15s;
+  font-family: var(--font);
+  white-space: nowrap;
+}
+.nav-pill.act { background: var(--pink); color: #fff; }
+.nav-pill:not(.act):hover { background: var(--sur3); color: var(--txt); }
+
+/* Link variant */
+.nav-link {
+  font-size: 12px; text-decoration: none;
+  padding: 5px 12px; border-radius: var(--r);
+  border: 1px solid var(--bdr2); background: var(--sur2);
+  transition: all .15s; font-family: var(--font); font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+  white-space: nowrap; color: var(--txt2);
+}
+.nav-link:hover { border-color: var(--pink); color: var(--pink); }
+.nav-link.home { color: var(--txt2); }
+.nav-link.admin { color: var(--ylw); border-color: rgba(255,214,0,.3); }
+.nav-link.admin:hover { border-color: var(--ylw); }
+.nav-link.to-report { color: var(--grn); border-color: rgba(0,230,118,.3); }
+.nav-link.to-report:hover { border-color: var(--grn); }
+
+/* ── PAGE / TAB ── */
+.page { display: none; }
+.page.act { display: block; }
+
+/* ── SECTION ── */
+.section { padding: 28px 32px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--sur1);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r2);
+  padding: 22px 24px;
+  margin-bottom: 18px;
+}
+.card-title {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--txt3); margin-bottom: 18px;
+  font-family: var(--mono);
+}
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.card-head-title { font-size: 14px; font-weight: 600; color: var(--txt); }
+
+/* ── KPI CARD ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px; margin-bottom: 18px;
+}
+.kpi-card {
+  background: var(--sur1);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r2);
+  padding: 16px;
+  position: relative; overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--c, var(--pink));
+}
+.kpi-label {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--txt3); margin-bottom: 8px;
+}
+.kpi-val {
+  font-family: var(--mono); font-size: 28px;
+  font-weight: 600; color: var(--txt); line-height: 1;
+  margin-bottom: 4px;
+}
+.kpi-sub { font-size: 11px; color: var(--txt3); font-family: var(--mono); }
+
+/* ── TABLE ── */
+.dtable { width: 100%; border-collapse: collapse; }
+.dtable th {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--txt3); font-weight: 600;
+  text-align: right; padding: 8px 12px;
+  border-bottom: 1px solid var(--bdr);
+  white-space: nowrap;
+}
+.dtable th:first-child { text-align: left; }
+.dtable td {
+  padding: 11px 12px; border-bottom: 1px solid var(--bdr);
+  font-size: 13px; color: var(--txt2);
+  text-align: right; font-family: var(--mono);
+  white-space: nowrap;
+}
+.dtable td:first-child { text-align: left; color: var(--txt); font-weight: 600; font-family: var(--font); }
+.dtable tr:last-child td { border-bottom: none; }
+.dtable tr:hover td { background: rgba(255,0,158,.03); }
+
+/* ── PILLS ── */
+.pill {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 700;
+  font-family: var(--mono); white-space: nowrap;
+}
+.pill-grn  { background: rgba(0,230,118,.12);  color: var(--grn); }
+.pill-red  { background: rgba(255,82,82,.12);  color: var(--red); }
+.pill-ylw  { background: rgba(255,214,0,.12);  color: var(--ylw); }
+.pill-blu  { background: rgba(64,196,255,.12); color: var(--blu); }
+.pill-pnk  { background: rgba(255,0,158,.12);  color: var(--pink2); }
+.pill-na   { background: rgba(85,85,85,.2);    color: var(--txt3); }
+
+/* ── POSITION BADGE ── */
+.pos {
+  display: inline-block;
+  padding: 2px 7px; border-radius: 4px;
+  font-family: var(--mono); font-size: 9px;
+  font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+}
+.pos-senior  { background: rgba(171,71,188,.2); color: var(--pur); }
+.pos-junior2 { background: rgba(64,196,255,.15); color: var(--blu); }
+.pos-junior1 { background: rgba(255,145,0,.15);  color: var(--orn); }
+.pos-novacek { background: rgba(85,85,85,.2);    color: var(--txt3); }
+
+/* ── BAR CHART ── */
+.bar-list { display: flex; flex-direction: column; gap: 9px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-name { font-size: 12px; color: var(--txt2); width: 170px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { flex: 1; background: var(--sur3); border-radius: 4px; height: 7px; overflow: hidden; }
+.bar-fill  { height: 100%; border-radius: 4px; background: var(--pink); transition: width .5s ease; }
+.bar-fill.grn { background: var(--grn); }
+.bar-fill.ylw { background: var(--ylw); }
+.bar-fill.blu { background: var(--blu); }
+.bar-num { font-family: var(--mono); font-size: 11px; color: var(--txt3); min-width: 38px; text-align: right; }
+
+/* ── GRID LAYOUTS ── */
+.two-col   { display: grid; grid-template-columns: 1fr 1fr;     gap: 18px; margin-bottom: 18px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+.four-col  { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 18px; }
+
+/* ── SELLER CARDS ── */
+.seller-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; }
+.seller-card {
+  background: var(--sur2); border: 1px solid var(--bdr);
+  border-radius: var(--r); padding: 16px; text-align: center;
+}
+.seller-name { font-size: 12px; font-weight: 600; color: var(--txt2); margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seller-big  { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--pink); line-height: 1; }
+.seller-lbl  { font-family: var(--mono); font-size: 10px; color: var(--txt3); margin-top: 5px; }
+
+/* ── UPLOAD STRIP ── */
+.upload-strip {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--sur1); border: 1px solid var(--bdr);
+  border-radius: var(--r2); padding: 14px 22px; margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.upload-slot { display: flex; align-items: center; gap: 10px; }
+.upload-slot-label { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--txt3); white-space: nowrap; }
+.upload-pick { position: relative; display: inline-flex; }
+.upload-pick input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; }
+.upload-pick-btn {
+  background: var(--sur2); border: 1px solid var(--bdr2);
+  color: var(--txt2); border-radius: var(--r); padding: 6px 14px;
+  font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  font-family: var(--font); transition: all .15s;
+}
+.upload-pick:hover .upload-pick-btn { border-color: var(--pink); color: var(--pink); }
+.fname { font-family: var(--mono); font-size: 11px; color: var(--txt3); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fname.ok { color: var(--grn); }
+.strip-div { width: 1px; background: var(--bdr); height: 32px; flex-shrink: 0; margin: 0 4px; }
+.demo-btn {
+  background: var(--sur2); border: 1px dashed var(--bdr2); color: var(--txt3);
+  border-radius: var(--r); padding: 6px 14px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: var(--font); transition: all .15s;
+}
+.demo-btn:hover { border-color: var(--pink); color: var(--pink); }
+
+/* ── PERIOD BAR ── */
+.period-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.view-seg { display: flex; gap: 3px; background: var(--sur1); border: 1px solid var(--bdr); border-radius: var(--r); padding: 3px; }
+.vseg { padding: 6px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; background: transparent; color: var(--txt2); transition: all .15s; font-family: var(--font); }
+.vseg.act { background: var(--pink); color: #fff; }
+.vseg:not(.act):hover { background: var(--sur3); color: var(--txt); }
+.period-ctrl { display: flex; align-items: center; gap: 8px; }
+.period-nav { width: 32px; height: 32px; background: var(--sur1); border: 1px solid var(--bdr); color: var(--txt2); border-radius: var(--r); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+.period-nav:hover { border-color: var(--pink); color: var(--pink); }
+.period-lbl { font-family: var(--mono); font-size: 13px; color: var(--txt); min-width: 200px; text-align: center; font-weight: 600; }
+.today-btn { background: var(--sur2); border: 1px solid var(--bdr2); color: var(--txt2); border-radius: var(--r); padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font); transition: all .15s; }
+.today-btn:hover { border-color: var(--pink); color: var(--pink); }
+
+/* ── CALENDAR INFO ── */
+.cal-info-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.cal-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--r); font-family: var(--mono); font-size: 11px; background: var(--sur2); border: 1px solid var(--bdr2); color: var(--txt2); }
+.cal-chip .num { font-size: 15px; font-weight: 700; color: var(--txt); }
+.cal-chip.progress-chip { border-color: rgba(255,0,158,.3); }
+.cal-chip.progress-chip .num { color: var(--pink); }
+.cal-chip.holiday-chip { border-color: rgba(255,214,0,.3); }
+.cal-chip.holiday-chip .num { color: var(--ylw); }
+.holiday-item { color: var(--ylw); }
+
+/* ── AUTH ── */
+.auth-card {
+  background: var(--sur1); border: 1px solid var(--bdr2);
+  border-radius: 18px; padding: 48px 52px 40px;
+  width: 400px; text-align: center;
+  position: relative; z-index: 1;
+}
+.auth-wordmark { font-family: var(--mono); font-size: 10px; letter-spacing: 5px; color: var(--txt3); text-transform: uppercase; margin-bottom: 36px; }
+.auth-icon { width: 56px; height: 56px; background: var(--pink); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 22px; }
+.auth-h { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.auth-sub { font-size: 13px; color: var(--txt2); margin-bottom: 30px; }
+.auth-field { width: 100%; background: var(--bg); border: 1px solid var(--bdr2); border-radius: 10px; padding: 12px 16px; font-family: var(--mono); font-size: 18px; letter-spacing: 8px; text-align: center; color: var(--txt); outline: none; transition: border-color .2s, box-shadow .2s; margin-bottom: 14px; }
+.auth-field:focus { border-color: var(--pink); box-shadow: 0 0 0 3px var(--pink-glow); }
+.auth-field.shake { animation: shake .35s; border-color: var(--red); }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(7px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+.auth-btn { width: 100%; background: var(--pink); color: #fff; border: none; border-radius: 10px; padding: 12px; font-family: var(--font); font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .2s; }
+.auth-btn:hover { opacity: .85; }
+.auth-err { min-height: 20px; font-size: 12px; color: var(--red); margin-top: 12px; font-family: var(--mono); }
+
+/* ── ADMIN ── */
+.admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.admin-wide { grid-column: 1 / -1; }
+.op-editor { width: 100%; border-collapse: collapse; }
+.op-editor th { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--txt3); font-weight: 600; text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--bdr); }
+.op-editor td { padding: 8px 10px; border-bottom: 1px solid var(--bdr); vertical-align: middle; }
+.op-editor tr:last-child td { border-bottom: none; }
+.ei { background: var(--bg); border: 1px solid var(--bdr2); border-radius: 6px; padding: 6px 9px; color: var(--txt); font-family: var(--mono); font-size: 12px; outline: none; width: 100%; transition: border-color .15s; }
+.ei:focus { border-color: var(--pink); }
+.es { background: var(--bg); border: 1px solid var(--bdr2); border-radius: 6px; padding: 6px 9px; color: var(--txt); font-size: 12px; outline: none; width: 100%; cursor: pointer; appearance: none; }
+.del-btn { background: none; border: 1px solid transparent; color: var(--txt3); cursor: pointer; border-radius: 6px; padding: 5px 8px; font-size: 14px; transition: all .15s; }
+.del-btn:hover { border-color: var(--red); color: var(--red); }
+.pass-field { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+.pass-label { font-size: 13px; color: var(--txt2); min-width: 140px; }
+.pass-inp { flex: 1; background: var(--bg); border: 1px solid var(--bdr2); border-radius: 8px; padding: 9px 12px; color: var(--txt); font-family: var(--mono); font-size: 14px; outline: none; transition: border-color .15s; }
+.pass-inp:focus { border-color: var(--pink); }
+.wd-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 10px; }
+.wd-cell { display: flex; flex-direction: column; gap: 5px; }
+.wd-lbl { font-family: var(--mono); font-size: 10px; color: var(--txt3); letter-spacing: 1px; }
+.wd-auto { font-family: var(--mono); font-size: 10px; color: var(--txt3); }
+.wd-inp { background: var(--bg); border: 1px solid var(--bdr2); border-radius: 7px; padding: 8px 4px; color: var(--txt); font-family: var(--mono); font-size: 16px; font-weight: 600; text-align: center; outline: none; width: 100%; transition: border-color .15s; }
+.wd-inp:focus { border-color: var(--pink); }
+.wd-op-wrap { overflow-x: auto; }
+.wd-op-table { border-collapse: collapse; width: 100%; min-width: 1000px; }
+.wd-op-table th { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--txt3); font-weight: 600; padding: 7px 8px; border-bottom: 1px solid var(--bdr); text-align: center; white-space: nowrap; line-height: 1.4; }
+.wd-op-table th:first-child { text-align: left; }
+.wd-op-table td { padding: 8px 6px; border-bottom: 1px solid var(--bdr); text-align: center; vertical-align: middle; }
+.wd-op-table tr:last-child td { border-bottom: none; }
+.wd-op-table td:first-child { text-align: left; padding-left: 10px; }
+.wd-op-cell { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; width: 52px; }
+.wd-override { width: 46px; background: var(--bg); border: 1px solid transparent; border-radius: 5px; padding: 4px 2px; color: var(--ylw); font-family: var(--mono); font-size: 13px; font-weight: 600; text-align: center; outline: none; transition: border-color .15s; -moz-appearance: textfield; }
+.wd-override::-webkit-inner-spin-button, .wd-override::-webkit-outer-spin-button { -webkit-appearance: none; }
+.wd-override:focus { border-color: var(--pink); }
+.wd-override.has-val { border-color: var(--ylw); background: rgba(255,214,0,.07); }
+.wd-override::placeholder { color: var(--txt3); font-size: 10px; font-weight: 400; }
+.wd-op-name { font-size: 13px; font-weight: 600; color: var(--txt); font-family: var(--font); }
+.holiday-list { font-family: var(--mono); font-size: 11px; color: var(--txt3); line-height: 2; }
+
+/* ── BUTTONS ── */
+.btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--pink); color: #fff; border: none; border-radius: var(--r); padding: 9px 18px; font-family: var(--font); font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+.btn-primary:hover { opacity: .85; }
+.btn-sec { display: inline-flex; align-items: center; gap: 6px; background: var(--sur2); color: var(--txt2); border: 1px solid var(--bdr2); border-radius: var(--r); padding: 9px 18px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.btn-sec:hover { border-color: var(--pink); color: var(--pink); }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 22px; right: 22px; z-index: 9999; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(10px); transition: all .25s; pointer-events: none; font-family: var(--font); }
+.toast.ok  { background: var(--sur2); border: 1px solid var(--grn); color: var(--grn); }
+.toast.err { background: var(--sur2); border: 1px solid var(--red); color: var(--red); }
+.toast.vis { opacity: 1; transform: translateY(0); }
+
+/* ── EMPTY STATE ── */
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 72px 24px; color: var(--txt3); text-align: center; }
+.empty-ico { font-size: 52px; margin-bottom: 18px; opacity: .6; }
+.empty-h { font-size: 16px; color: var(--txt2); margin-bottom: 8px; font-weight: 600; }
+.empty-s { font-size: 13px; line-height: 1.6; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bdr2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--txt3); }
+
+/* ── FUNNEL ── */
+.funnel { display: flex; align-items: flex-end; gap: 6px; padding: 16px 0; }
+.funnel-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.funnel-bar { width: 100%; border-radius: 6px 6px 0 0; min-height: 8px; transition: height .5s ease; }
+.funnel-label { font-family: var(--mono); font-size: 10px; color: var(--txt3); text-align: center; }
+.funnel-val { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--txt); }
+.funnel-arrow { display: flex; align-items: center; color: var(--txt3); font-size: 14px; padding-bottom: 24px; flex-shrink: 0; }
+
+/* ── OPERATOR DETAIL ── */
+.op-detail-header {
+  display: flex; align-items: center; gap: 20px;
+  padding: 24px 32px; background: var(--sur1);
+  border-bottom: 1px solid var(--bdr); flex-wrap: wrap; gap: 16px;
+}
+.op-avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--pink); display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; flex-shrink: 0;
+}
+.op-name-block { flex: 1; }
+.op-name { font-size: 20px; font-weight: 700; color: var(--txt); }
+.op-meta { font-size: 12px; color: var(--txt2); font-family: var(--mono); margin-top: 4px; }
+.op-selector { background: var(--sur2); border: 1px solid var(--bdr2); color: var(--txt); font-family: var(--font); font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: var(--r); outline: none; cursor: pointer; }
+
+/* ── BONUS TABLE ── */
+.bonus-val  { color: var(--grn); font-weight: 700; }
+.bonus-zero { color: var(--txt3); }
+
+:root{--acc:#FF009E;}
+.logout-btn{font-size:12px;color:var(--txt3);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;font-family:var(--font);transition:color .15s;}
+.logout-btn:hover{color:var(--red);}
+
+</style>
+</head><body>
+<div class="topbar">
+  <a href="digiday-index.html" style="text-decoration:none"><div class="topbar-logo">DIGI<span class="brand">DAY</span></div></a>
+  <div class="nav-pills" style="margin-left:16px">
+    <a href="digiday-index.html" class="nav-pill ">&#x2302; Hub</a>
+    <a href="digiday-tym.html" class="nav-pill ">&#x1F3AF; T&#xFD;m</a>
+    <a href="digiday-report.html" class="nav-pill ">&#x1F4DE; Report CC</a>
+    <a href="digiday-obchod.html" class="nav-pill act">&#x1F4C8; Obchodn&#xED;</a>
+    <a href="digiday-jednotlivci.html" class="nav-pill ">&#x1F464; Jednotlivci</a>
+  </div>
+  <div class="topbar-spacer"></div>
+  <div style="display:flex;align-items:center;gap:8px"><span id="chip-view" style="font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:6px;background:var(--sur2);border:1px solid var(--bdr2);color:var(--txt3)">M&#x11B;s&#xED;c</span><div id="chip-data" style="display:none;font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:6px;background:var(--sur2);border:1px solid rgba(0,230,118,.3);color:var(--grn)">&#x25CF; Data OK</div><a href="digiday-admin.html" class="nav-link admin">&#x2699;&#xFE0F; Admin</a></div>
+</div>
+<div style="padding:24px 32px;max-width:1600px;margin:0 auto;">
+<div class="upload-strip">
+  <div style="display:flex;align-items:center;gap:8px;flex:1">
+    <span style="font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--txt3)">Data:</span>
+    <span style="font-family:var(--mono);font-size:11px;color:var(--txt2)" id="fn-info">&#x2014; nenačtena &#x2014;</span>
+  </div>
+  <div class="strip-div"></div>
+  <button class="demo-btn" id="btn-zadmin"
+    onclick="btnLoadAdmin(this)"
+    style="border-color:rgba(0,230,118,.4);color:var(--grn)"
+    title="Na&#x10D;te data nahran&#xe1; v Admin (stejn&#xfd; prohl&#xed;&#x17e;e&#x10d;)">&#x21BB; Z Admin</button>
+  <div class="strip-div"></div>
+  <button class="demo-btn" onclick="cloudPull()"
+    style="border-color:rgba(64,196,255,.4);color:var(--blu)"
+    title="St&#xe1;hne data z JSONbin cloudu (funguje odkudkoliv)">&#x2193; Z&nbsp;cloudu</button>
+</div>
+<div class="period-bar">
+  <div class="view-seg">
+    <button class="vseg" onclick="setView('day',this)">Den</button>
+    <button class="vseg" onclick="setView('week',this)">T&#xFD;den</button>
+    <button class="vseg act" onclick="setView('month',this)">M&#x11B;s&#xED;c</button>
+  </div>
+  <div class="period-ctrl">
+    <button class="period-nav" onclick="navigate(-1)">&#x2039;</button>
+    <div class="period-lbl" id="period-lbl">&#x2014;</div>
+    <button class="period-nav" onclick="navigate(1)">&#x203A;</button>
+    <button class="today-btn" onclick="goToday()">Dnes</button>
+  </div>
+</div>
+<div id="obchod-body"><div class="empty"><div class="empty-ico">&#x1F4C8;</div><div class="empty-h">Nejsou data</div><div class="empty-s">Klikněte <strong>↻ Z Admin</strong> nebo <strong>↓ Z&nbsp;cloudu</strong>.</div></div></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+
+/* ════════════ CZECH CALENDAR ════════════ */
+
+const CZ_HOLIDAYS = {
+  2025: new Set([
+    '2025-01-01','2025-04-18','2025-04-21','2025-05-01','2025-05-08',
+    '2025-07-05','2025-07-06','2025-09-28','2025-10-28','2025-11-17',
+    '2025-12-24','2025-12-25','2025-12-26'
+  ]),
+  2026: new Set([
+    '2026-01-01','2026-04-03','2026-04-06','2026-05-01','2026-05-08',
+    '2026-07-05','2026-07-06','2026-09-28','2026-10-28','2026-11-17',
+    '2026-12-24','2026-12-25','2026-12-26'
+  ]),
+  2027: new Set([
+    '2027-01-01','2027-03-26','2027-03-29','2027-05-01','2027-05-08',
+    '2027-07-05','2027-07-06','2027-09-28','2027-10-28','2027-11-17',
+    '2027-12-24','2027-12-25','2027-12-26'
+  ])
+};
+
+function isHoliday(dateStr) {
+  const year = parseInt(dateStr.slice(0,4));
+  return (CZ_HOLIDAYS[year] || new Set()).has(dateStr);
+}
+
+function isWorkday(d) {
+  // d = Date object
+  const dow = d.getDay();
+  if (dow === 0 || dow === 6) return false;
+  const ds = d.toISOString().slice(0,10);
+  return !isHoliday(ds);
+}
+
+// Total workdays in a given month (year/month = 1-based)
+function workdaysInMonth(year, month) {
+  const key = `${year}-${String(month).padStart(2,'0')}`;
+  // Use cfg override if set
+  const override = cfg.workDays[key];
+  if (override) return override;
+  // Calculate from calendar
+  const d = new Date(year, month-1, 1);
+  let count = 0;
+  while (d.getMonth() === month-1) {
+    if (isWorkday(d)) count++;
+    d.setDate(d.getDate()+1);
+  }
+  return count;
+}
+
+// Workdays elapsed so far this month (up to and including today, or end of month if past)
+function workdaysSoFar(year, month) {
+  const today = new Date();
+  const start = new Date(year, month-1, 1);
+  const endOfMonth = new Date(year, month, 0); // last day of month
+  const cap = today < endOfMonth ? today : endOfMonth;
+  if (cap < start) return 0;
+  let count = 0;
+  const cur = new Date(start);
+  while (cur <= cap) {
+    if (isWorkday(cur)) count++;
+    cur.setDate(cur.getDate()+1);
+  }
+  return count;
+}
+
+// List of holiday dates in a month, for display
+function holidaysInMonth(year, month) {
+  const set = CZ_HOLIDAYS[year] || new Set();
+  const prefix = `${year}-${String(month).padStart(2,'0')}`;
+  return [...set].filter(d => d.startsWith(prefix)).sort();
+}
+
+const CZ_MONTH_NAMES = ['Leden','Únor','Březen','Duben','Květen','Červen',
+  'Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
+const CZ_DAY_NAMES = ['Ne','Po','Út','St','Čt','Pá','So'];
+const CZ_HOLIDAY_NAMES = {
+  '01-01':'Nový rok', '05-01':'Svátek práce', '05-08':'Den vítězství',
+  '07-05':'Cyril a Metoděj', '07-06':'Jan Hus', '09-28':'Den české státnosti',
+  '10-28':'Den vzniku Československa', '11-17':'Den boje za svobodu',
+  '12-24':'Štědrý den', '12-25':'1. svátek vánoční', '12-26':'2. svátek vánoční',
+  '04-03':'Velký pátek 2026', '04-06':'Velikonoční pondělí 2026',
+  '04-18':'Velký pátek 2025', '04-21':'Velikonoční pondělí 2025',
+};
+
+/* ════════════ STATE & CONFIG ════════════ */
+
+const SK = 'dcc4_';
+
+let cfg = {
+  pass: 'digiday2026',
+  operators: [
+    { name:'Jaroslava Benková', pos:'junior2', planM:15, planD:25, active:true },
+    { name:'Petr Poledník',     pos:'junior1', planM:10, planD:20, active:true },
+    { name:'Miriam Vrbová',     pos:'junior1', planM:10, planD:20, active:true },
+    { name:'Marcela Hamidi',    pos:'senior',  planM:35, planD:35, active:true },
+    { name:'Monika Smejkalová', pos:'senior',  planM:35, planD:35, active:true },
+    { name:'Radka Káňová',      pos:'junior2', planM:15, planD:25, active:true },
+    { name:'Leona Smrčková',    pos:'junior1', planM:10, planD:20, active:true },
+  ],
+  workDays: {},          // YYYY-MM → override počtu prac.dní (prázdné = auto z kalendáře)
+  workedDaysOverrides: {},  // "YYYY-MM__Jméno" → ruční přepis odprac. dní operátora
+  positions: {
+    senior:  { planM:35, planD:35 },
+    junior2: { planM:15, planD:25 },
+    junior1: { planM:10, planD:20 },
+    novacek: { planM:0,  planD:0  }
+  }
+};
+
+let st = {
+  view: 'day',
+  cursor: new Date(),
+  calls: [],
+  meetings: [],
+  hasData: false
+};
+
+/* ════════════ PERSIST ════════════ */
+function saveCfg() {
+  try { localStorage.setItem(SK+'cfg', JSON.stringify(cfg)); } catch(e){}
+}
+function loadCfg() {
+  try {
+    const s = localStorage.getItem(SK+'cfg');
+    if (!s) return;
+    const p = JSON.parse(s);
+    if (p.pass)                cfg.pass = p.pass;
+    if (p.operators)           cfg.operators = p.operators;
+    if (p.workDays)            cfg.workDays = { ...cfg.workDays, ...p.workDays };
+    if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
+    if (p.positions)           cfg.positions = { ...cfg.positions, ...p.positions };
+  } catch(e){}
+}
+
+// Save/load call data to localStorage for cross-page sharing (gzip not available, store raw)
+function saveData() {
+  try {
+    localStorage.setItem(SK+'calls_v',    JSON.stringify(st.calls));
+    localStorage.setItem(SK+'meetings_v', JSON.stringify(st.meetings));
+    localStorage.setItem(SK+'has_data',   st.hasData ? '1' : '0');
+  } catch(e) {
+    // Quota exceeded — zkus bez hovorů starších než aktuální měsíc
+    console.warn('localStorage quota exceeded, trying trimmed save:', e);
+    var now = new Date(); var mk = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+    var trimmed = st.calls.filter(function(r) {
+      var d = r['Aktivita - Čas aktualizace'] || r['Aktivita - Čas přidání'] || '';
+      return d >= mk.slice(0,4); // Ponech alespoň letošní rok
+    });
+    try {
+      localStorage.setItem(SK+'calls_v',    JSON.stringify(trimmed));
+      localStorage.setItem(SK+'meetings_v', JSON.stringify(st.meetings));
+      localStorage.setItem(SK+'has_data',   st.hasData ? '1' : '0');
+      console.log('Trimmed save OK:', trimmed.length, 'calls');
+    } catch(e2) { console.error('Save completely failed:', e2); }
+  }
+}
+function loadData() {
+  try {
+    const c = localStorage.getItem(SK+'calls_v');
+    const m = localStorage.getItem(SK+'meetings_v');
+    const h = localStorage.getItem(SK+'has_data');
+    if (c) st.calls    = JSON.parse(c);
+    if (m) st.meetings = JSON.parse(m);
+    if (h) st.hasData  = h === '1';
+  } catch(e){}
+}
+
+/* ════════════ CSV ════════════ */
+function parseCSV(text) {
+  const lines = text.replace(/\r/g,'').trim().split('\n');
+  const headers = parseLine(lines[0]);
+  return lines.slice(1).filter(l=>l.trim()).map(l => {
+    const vals = parseLine(l);
+    const obj = {};
+    headers.forEach((h,i) => obj[h.trim()] = (vals[i]||'').trim());
+    return obj;
+  });
+}
+function parseLine(line) {
+  const res=[]; let inQ=false, cur='';
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(c===','&&!inQ){res.push(cur);cur='';}
+    else cur+=c;
+  }
+  res.push(cur); return res;
+}
+
+/* ════════════ DATA HELPERS ════════════ */
+function inRangeCalls(row) {
+  const {start,end} = getRange();
+  // Hovory: filtrujeme dle Čas aktualizace (kdy byl hovor uzavřen/zapsán do systému)
+  // Toto pole přesně odpovídá počtům v Pipedrive exportu
+  const raw = row['Aktivita - Čas aktualizace'] || row['Aktivita - Čas přidání'] || '';
+  const d = new Date(raw);
+  return !isNaN(d) && d >= start && d < end;
+}
+function inRangeMeetings(row) {
+  const {start,end} = getRange();
+  const d = new Date(row['Aktivita - Čas přidání']);
+  return !isNaN(d) && d >= start && d < end;
+}
+function inRange(row) { return inRangeCalls(row); }
+
+function isNeusk(row) {
+  return (row['Aktivita - Typ']||'').toLowerCase().includes('neusk') ||
+         (row['Aktivita - Stav']||'').toLowerCase().includes('neusk') ||
+         (row['Aktivita - Předmět']||'').toLowerCase().includes('neusk');
+}
+function getPrimary(labelStr) {
+  if (!labelStr||!labelStr.trim()) return 'Ostatní';
+  const parts = labelStr.split(',').map(l=>l.trim()).filter(Boolean);
+  const prio = ['Základní škola','Gymnázium','SŠ','Střední škola','Škola',
+                'Domov seniorů/Zař. pro zdr. post.','Turistické Informační Centrum',
+                'Pronájem LED panelů','Město','Obec'];
+  for(const p of prio) if(parts.includes(p)) return p;
+  return parts[0]||'Ostatní';
+}
+function getMonthKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+/* ════════════ PERIOD ════════════ */
+function getRange() {
+  const d = st.cursor;
+  if (st.view==='day') {
+    const s = new Date(d.getFullYear(),d.getMonth(),d.getDate());
+    const e = new Date(s); e.setDate(e.getDate()+1);
+    return {start:s,end:e};
+  } else if (st.view==='week') {
+    const dow = d.getDay();
+    const diff = dow===0?-6:1-dow;
+    const s = new Date(d.getFullYear(),d.getMonth(),d.getDate()+diff);
+    const e = new Date(s); e.setDate(e.getDate()+7);
+    return {start:s,end:e};
+  } else {
+    const s = new Date(d.getFullYear(),d.getMonth(),1);
+    const e = new Date(d.getFullYear(),d.getMonth()+1,1);
+    return {start:s,end:e};
+  }
+}
+
+function workDaysForPeriod() {
+  const d = st.cursor;
+  if (st.view==='month') return workdaysInMonth(d.getFullYear(), d.getMonth()+1);
+  const {start,end} = getRange();
+  let cnt=0;
+  const cur = new Date(start);
+  while(cur<end){ if(isWorkday(cur)) cnt++; cur.setDate(cur.getDate()+1); }
+  return cnt;
+}
+
+/* ════════════ WORKED DAYS (with override) ════════════ */
+function wdKey(monthKey, opName) { return monthKey+'__'+opName; }
+
+function getWorkedDays(opName, monthKey) {
+  const key = wdKey(monthKey, opName);
+  const ov = cfg.workedDaysOverrides[key];
+  if (ov !== undefined && ov !== null && ov !== '') return parseInt(ov, 10);
+  return getWorkedDaysAuto(opName, monthKey);
+}
+function getWorkedDaysAuto(opName, monthKey) {
+  // Počítáme unikátní dny z Čas aktualizace (kdy byl hovor zapsán)
+  const days = new Set(
+    st.calls
+      .filter(r => {
+        if (r['Aktivita - Přiřazeno uživateli'] !== opName) return false;
+        const raw = r['Aktivita - Čas aktualizace'] || r['Aktivita - Čas přidání'] || '';
+        return raw.startsWith(monthKey);
+      })
+      .map(r => (r['Aktivita - Čas aktualizace'] || r['Aktivita - Čas přidání'] || '').slice(0,10))
+  );
+  return days.size;
+}
+
+/* ════════════ RENDER HELPERS ════════════ */
+function pct(n) {
+  if(isNaN(n)||!isFinite(n)) return '—';
+  return n.toFixed(1).replace('.',',')+' %';
+}
+function kpiPill(ratio) {
+  if(ratio>=1.0) return `<span class="pill pill-grn">${pct(ratio*100)}</span>`;
+  if(ratio>=0.8) return `<span class="pill pill-ylw">${pct(ratio*100)}</span>`;
+  if(ratio>0)    return `<span class="pill pill-red">${pct(ratio*100)}</span>`;
+  return `<span class="pill pill-na">—</span>`;
+}
+
+/* ════════════ TOAST ════════════ */
+let toastTimer;
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  if(!el) return;
+  el.textContent=msg; el.className=`toast ${type}`;
+  void el.offsetWidth; el.classList.add('vis');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('vis'), 2800);
+}
+
+
+/* ════════════ PERIOD SYNC (across pages) ════════════ */
+
+// Save/load selected month for cross-page sync
+function saveMonth(monthKey) {
+  try { localStorage.setItem(SK + 'month', monthKey); } catch(e) {}
+}
+function loadMonth() {
+  try { return localStorage.getItem(SK + 'month') || null; } catch(e) { return null; }
+}
+
+// Save/load selected view (day/week/month)
+function saveView(view) {
+  try { localStorage.setItem(SK + 'view', view); } catch(e) {}
+}
+function loadView() {
+  try { return localStorage.getItem(SK + 'view') || 'month'; } catch(e) { return 'month'; }
+}
+
+// Helper: get month key from data max date
+function getDataMaxMonth() {
+  const dates = [];
+  // Hovory: použij Čas aktualizace (= kdy hovor proběhl), NE Termín (= plánované datum)
+  st.calls.forEach(r => {
+    const raw = r['Aktivita - Čas aktualizace'] || r['Aktivita - Čas přidání'] || '';
+    if (raw && raw.length >= 7) dates.push(raw.slice(0, 7));
+  });
+  // Schůzky: Čas přidání = kdy byla schůzka zapsána
+  st.meetings.forEach(r => {
+    const raw = r['Aktivita - Čas přidání'] || '';
+    if (raw && raw.length >= 7) dates.push(raw.slice(0, 7));
+  });
+  if (dates.length === 0) return getMonthKey(new Date());
+  return dates.sort().reverse()[0];
+}
+
+// Get cursor date from saved month or data max
+function getInitialCursor() {
+  // Priority: 1) saved month in localStorage, 2) data max month, 3) today
+  const saved = loadMonth();
+  if (saved) {
+    const [y, m] = saved.split('-').map(Number);
+    return new Date(y, m - 1, 1);
+  }
+  if (st.hasData) {
+    const mKey = getDataMaxMonth();
+    const [y, m] = mKey.split('-').map(Number);
+    return new Date(y, m - 1, 1);
+  }
+  return new Date();
+}
+
+/* ════════════════════════════════════════════════════
+   BONUS ENGINE — dle dokumentu POZICE (od 1.1.2026)
+════════════════════════════════════════════════════ */
+
+/**
+ * Vypočítá bonus operátora za měsíc podle jeho pozice.
+ * 
+ * NOVÁČEK:  odměna za testy – nelze počítat z dat → vrátí null
+ * JUNIOR 1: A) spojené/měsíc  B) schůzky/měsíc
+ * JUNIOR 2: A) spojené/měsíc  B) schůzky/měsíc (vyšší pásma)
+ * SENIOR:   A) průměr spoj./DEN  B) schůzky/měsíc + Senior Bonus
+ * Vše kráceno dle docházky (absence = fond − odpracováno).
+ */
+function calcBonus(pos, connTotal, connPerDay, meetings, worked, fond) {
+  if (pos === 'novacek') {
+    return { bonA: null, bonB: null, raw: null, kraceni: 0, final: null, note: 'Nováček – odměna za testy (ruční)' };
+  }
+
+  let bonA = 0, bonB = 0;
+
+  if (pos === 'junior1') {
+    // A: spojené hovory celkem za měsíc
+    bonA = connTotal >= 20 ? 1000 : connTotal >= 15 ? 500 : 0;
+    // B: schůzky celkem za měsíc
+    bonB = meetings >= 10 ? 2000 : meetings >= 7 ? 1000 : meetings >= 5 ? 500 : 0;
+  }
+  else if (pos === 'junior2') {
+    bonA = connTotal >= 25 ? 1000 : connTotal >= 20 ? 700 : connTotal >= 15 ? 500 : 0;
+    bonB = meetings >= 15 ? 2000 : meetings >= 10 ? 1500 : meetings >= 5 ? 500 : 0;
+  }
+  else if (pos === 'senior') {
+    // Senior bonus: každá schůzka nad 35 = +1 hovor do denního průměru
+    const extra = Math.max(0, meetings - 35);
+    const effectiveCpd = connPerDay + (worked > 0 ? extra / worked : 0);
+    bonA = effectiveCpd >= 35 ? 1000 : effectiveCpd >= 30 ? 800 : effectiveCpd >= 25 ? 500 : effectiveCpd >= 20 ? 200 : 0;
+    bonB = meetings >= 35 ? 3000 : meetings >= 30 ? 2500 : meetings >= 25 ? 2000 : meetings >= 20 ? 500 : 0;
+  }
+
+  const raw = bonA + bonB;
+
+  // Docházka krácení
+  const absence = Math.max(0, fond - worked);
+  const kraceniPct = absence <= 5 ? 0 : absence <= 10 ? 15 : absence <= 15 ? 40 : 100;
+  const final = Math.round(raw * (1 - kraceniPct / 100));
+
+  return { bonA, bonB, raw, kraceniPct, absence, final };
+}
+
+/** Textový popis pásma bonusu pro tooltip */
+function bonusBreakdown(pos, connTotal, connPerDay, meetings, worked, fond) {
+  const b = calcBonus(pos, connTotal, connPerDay, meetings, worked, fond);
+  if (b.final === null) return b.note;
+  const posLabel = { senior:'Senior', junior2:'Junior 2', junior1:'Junior 1', novacek:'Nováček' }[pos] || pos;
+  let s = `${posLabel}: `;
+  if (pos === 'senior') {
+    s += `Spoj./den ${connPerDay.toFixed(1)} → A: ${b.bonA} Kč`;
+  } else {
+    s += `Spoj. celkem ${connTotal} → A: ${b.bonA} Kč`;
+  }
+  s += ` | Schůzky ${meetings} → B: ${b.bonB} Kč`;
+  s += ` | Brutto: ${b.raw} Kč`;
+  if (b.kraceniPct > 0) s += ` | Absence ${b.absence}d → krácení ${b.kraceniPct}% → ${b.final} Kč`;
+  return s;
+}
+
+
+/* ════ CLOUD + PAGE INIT ════ */
+var _CCK = 'dcc4_cloud_cfg';
+function _gCC() {
+  try { return JSON.parse(localStorage.getItem(_CCK) || '{}'); } catch(e) { return {}; }
+}
+
+/* Načte data z Admin (localStorage) s jasnou zpětnou vazbou */
+function btnLoadAdmin(btn) {
+  loadCfg(); loadData();
+  if (st.hasData) {
+    _syncChip(); _doRender();
+    if (btn) {
+      btn.textContent = '\u2713 Na\u010dteno (' + st.calls.length + ' hov.)';
+      setTimeout(function() { btn.innerHTML = '&#x21BB; Z Admin'; }, 3000);
+    }
+  } else {
+    // Data nejsou v localStorage tohoto prohlížeče
+    if (btn) {
+      btn.textContent = '\u26A0 Pr\xe1zdn\xe9';
+      setTimeout(function() { btn.innerHTML = '&#x21BB; Z Admin'; }, 4000);
+    }
+    toast('\u26A0 Data nejsou v tomto prohl\xed\u017ee\u010di. '
+      + 'Nahrajte CSV v Admin nebo pou\u017eijte \u2193 Z\xa0cloudu.', 'err');
+  }
+}
+function cloudPull() {
+  var cc = _gCC();
+  if (!cc.binId) { toast('Nastavte Cloud Sync v Admin.', 'err'); return; }
+  var hdrs = {'Content-Type': 'application/json'};
+  if (cc.apiKey) { hdrs['X-Master-Key'] = cc.apiKey; }
+  toast('\u2193 Stahuj\xed z cloudu\u2026');
+  fetch('https://api.jsonbin.io/v3/b/' + cc.binId + '/latest', {headers: hdrs})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.record) {
+        var rec = d.record;
+        if (rec.cfg)      { localStorage.setItem('dcc4_cfg',        JSON.stringify(rec.cfg)); }
+        if (rec.calls)    { localStorage.setItem('dcc4_calls_v',    JSON.stringify(rec.calls)); }
+        if (rec.meetings) { localStorage.setItem('dcc4_meetings_v', JSON.stringify(rec.meetings)); }
+        if (rec.has_data) { localStorage.setItem('dcc4_has_data',   rec.has_data); }
+        loadCfg(); loadData();
+        var upd = rec.updated ? ' (' + new Date(rec.updated).toLocaleString('cs-CZ') + ')' : '';
+        toast('\u2601 Aktualizov\xe1no' + upd);
+        _doRender();
+      } else {
+        toast('Cloud: bin pr\xe1zdn\xfd nebo nedostupn\xfd', 'err');
+      }
+    })
+    .catch(function(e) { toast('Chyba: ' + e.message, 'err'); });
+}
+
+function _syncChip() {
+  if (st.hasData) {
+    var cd = document.getElementById('chip-data');
+    if (cd) { cd.style.display = 'flex'; }
+    var fi = document.getElementById('fn-info');
+    if (fi) { fi.textContent = '\u2601 ' + st.calls.length + ' hov\u016fr\u016f \xb7 ' + st.meetings.length + ' sch\u016fzek'; }
+  }
+}
+
+function _syncView() {
+  document.querySelectorAll('.vseg').forEach(function(b) { b.classList.remove('act'); });
+  var pills = document.querySelectorAll('.vseg');
+  var vM = {day: 0, week: 1, month: 2};
+  if (pills[vM[st.view]]) { pills[vM[st.view]].classList.add('act'); }
+  var cv = document.getElementById('chip-view');
+  if (cv) { cv.textContent = {day: 'Den', week: 'T\xfdden', month: 'M\u011bs\xedc'}[st.view]; }
+}
+
+function _initPage(renderFn) {
+  loadCfg(); loadData();
+  var saved = loadMonth();
+  var sv = loadView();
+  st.view = sv;
+  if (saved) {
+    var p = saved.split('-');
+    st.cursor = new Date(+p[0], +p[1] - 1, 1);
+  } else if (st.hasData) {
+    var mk = getDataMaxMonth();
+    var p2 = mk.split('-');
+    st.cursor = new Date(+p2[0], +p2[1] - 1, 1);
+  } else {
+    st.cursor = new Date();
+  }
+  _syncView(); _syncChip(); renderFn();
+}
+
+function setView(v, btn) { st.view = v; saveView(v); _syncView(); _doRender(); }
+
+function navigate(dir) {
+  var d = new Date(st.cursor);
+  if (st.view === 'day') { d.setDate(d.getDate() + dir); }
+  else if (st.view === 'week') { d.setDate(d.getDate() + dir * 7); }
+  else { d.setMonth(d.getMonth() + dir); }
+  st.cursor = d; saveMonth(getMonthKey(d)); _doRender();
+}
+
+function goToday() { st.cursor = new Date(); saveMonth(getMonthKey(st.cursor)); _doRender(); }
+
+function periodLabel() {
+  var d = st.cursor;
+  if (st.view === 'day') {
+    return CZ_DAY_NAMES[d.getDay()] + ' ' + d.getDate() + '. ' + CZ_MONTH_NAMES[d.getMonth()] + ' ' + d.getFullYear();
+  }
+  if (st.view === 'week') {
+    var r = getRange(); var e = new Date(r.end); e.setDate(e.getDate() - 1);
+    return r.start.getDate() + '. \u2013 ' + e.getDate() + '. ' + CZ_MONTH_NAMES[d.getMonth()] + ' ' + d.getFullYear();
+  }
+  return CZ_MONTH_NAMES[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+
+/* ════ OBCHODNÍ VÝKON ════ */
+function _doRender() {
+  var pl = document.getElementById('period-lbl');
+  if (pl) { pl.textContent = periodLabel(); }
+  renderObchod();
+}
+
+function renderObchod() {
+  var pl = document.getElementById('period-lbl');
+  if (pl) { pl.textContent = periodLabel(); }
+  var body = document.getElementById('obchod-body');
+  if (!st.hasData) {
+    body.innerHTML = '<div class="empty"><div class="empty-ico">&#x1F4C8;</div>'
+      + '<div class="empty-h">Nejsou data</div>'
+      + '<div class="empty-s">Klikn\u011bte <strong>\u21bb Z Admin</strong> nebo <strong>\u2193 Z&nbsp;cloudu</strong>.</div></div>';
+    return;
+  }
+  var calls    = st.calls.filter(inRangeCalls);
+  var meetings = st.meetings.filter(inRangeMeetings);
+  var conn   = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Spojen\xfd hovor'; });
+  var unconn = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Nespojen\xfd hovor'; });
+  var sched  = meetings.filter(function(r) { return !isNeusk(r) && r['Aktivita - Typ'] === 'Sch\u016fzka'; });
+  var h = '';
+  h += obchodSegmenty(conn, unconn, sched);
+  h += obchodObchodnici(sched);
+  h += obchodKraje(sched, conn);
+  body.innerHTML = h;
+}
+
+function obchodSegmenty(conn, unconn, sched) {
+  var map = {};
+  conn.concat(unconn).forEach(function(r) {
+    var s = getPrimary(r['Organizace - \u0160t\xedtek']);
+    if (!map[s]) { map[s] = {c: 0, u: 0, sch: 0}; }
+    if (r['Aktivita - Typ'] === 'Spojen\xfd hovor') { map[s].c++; } else { map[s].u++; }
+  });
+  sched.forEach(function(r) {
+    var s = getPrimary(r['Organizace - \u0160t\xedtek']);
+    if (!map[s]) { map[s] = {c: 0, u: 0, sch: 0}; }
+    map[s].sch++;
+  });
+  var entries = Object.keys(map).map(function(s) {
+    var v = map[s]; var t = v.c + v.u;
+    return {seg: s, total: t, c: v.c, u: v.u, sch: v.sch,
+            reach: t > 0 ? v.c / t * 100 : 0, conv: v.c > 0 ? v.sch / v.c * 100 : 0};
+  }).sort(function(a, b) { return b.total - a.total; });
+  var h = '<div class="card"><div class="card-head">'
+    + '<div class="card-head-title">Segmenty \u2014 vol\xe1n\xed a sch\u016fzky</div></div>'
+    + '<table class="dtable"><thead><tr>'
+    + '<th>Segment</th><th>Spojen\xe9</th><th>Nespojen\xe9</th><th>Celkem</th>'
+    + '<th>Dovolat.</th><th>Sch\u016fzky</th><th>Konverze</th></tr></thead><tbody>';
+  entries.forEach(function(e) {
+    h += '<tr><td>' + e.seg + '</td><td style="color:var(--blu)">' + e.c + '</td>'
+      + '<td style="color:var(--txt3)">' + e.u + '</td><td>' + e.total + '</td>'
+      + '<td>' + pct(e.reach) + '</td>'
+      + '<td style="color:var(--pink)">' + e.sch + '</td>'
+      + '<td>' + (e.c > 0 ? pct(e.conv) : '\u2014') + '</td></tr>';
+  });
+  return h + '</tbody></table></div>';
+}
+
+function obchodObchodnici(sched) {
+  var opSet = {};
+  cfg.operators.forEach(function(o) { opSet[o.name] = true; });
+  var map = {};
+  sched.forEach(function(r) {
+    var seller = r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'];
+    var caller = r['Aktivita - Autor'];
+    if (!seller || opSet[seller]) { return; }
+    if (!map[seller]) { map[seller] = {total: 0, byOp: {}}; }
+    map[seller].total++;
+    map[seller].byOp[caller] = (map[seller].byOp[caller] || 0) + 1;
+  });
+  var sorted = Object.keys(map).sort(function(a, b) { return map[b].total - map[a].total; });
+  if (!sorted.length) { return ''; }
+  var maxT = map[sorted[0]].total;
+  var h = '<div class="card"><div class="card-head">'
+    + '<div class="card-head-title">Sch\u016fzky dle obchodn\xedka</div></div>'
+    + '<div class="seller-grid">';
+  sorted.forEach(function(s) {
+    var d = map[s];
+    var ops = Object.keys(d.byOp).map(function(op) {
+      return '<div style="font-size:10px;color:var(--txt3);font-family:var(--mono)">' + op + ': ' + d.byOp[op] + '</div>';
+    }).join('');
+    h += '<div class="seller-card">'
+      + '<div class="seller-name">' + s + '</div>'
+      + '<div class="seller-big">' + d.total + '</div>'
+      + '<div class="seller-lbl">sch\u016fzek</div>'
+      + (ops ? '<div style="margin-top:8px">' + ops + '</div>' : '')
+      + '</div>';
+  });
+  return h + '</div></div>';
+}
+
+function obchodKraje(sched, conn) {
+  var krajMap = {};
+  sched.forEach(function(r) {
+    var k = r['Organizace - Kraj'] || 'Nezn\xe1m\xfd';
+    krajMap[k] = (krajMap[k] || 0) + 1;
+  });
+  var sorted = Object.keys(krajMap).sort(function(a, b) { return krajMap[b] - krajMap[a]; });
+  if (!sorted.length) { return ''; }
+  var maxK = krajMap[sorted[0]];
+  var h = '<div class="card"><div class="card-head">'
+    + '<div class="card-head-title">Sch\u016fzky dle kraje</div></div><div class="bar-list">';
+  sorted.forEach(function(k) {
+    h += '<div class="bar-row"><span class="bar-name">' + k + '</span>'
+      + '<div class="bar-track"><div class="bar-fill" style="background:var(--blu);width:' + krajMap[k] / maxK * 100 + '%"></div></div>'
+      + '<span class="bar-num" style="color:var(--blu)">' + krajMap[k] + '</span></div>';
+  });
+  return h + '</div></div>';
+}
+
+window.addEventListener('load', function() { _initPage(renderObchod); });
+
+</script>
+</body></html>
