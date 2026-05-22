@@ -421,6 +421,7 @@ body {
   <div class="topbar-spacer"></div>
   <div style="display:flex;align-items:center;gap:8px"><span id="chip-view" style="font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:6px;background:var(--sur2);border:1px solid var(--bdr2);color:var(--txt3)">M&#x11B;s&#xED;c</span><div id="chip-data" style="display:none;font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:6px;background:var(--sur2);border:1px solid rgba(0,230,118,.3);color:var(--grn)">&#x25CF; Data OK</div><a href="digiday-admin.html" class="nav-link admin">&#x2699;&#xFE0F; Admin</a></div>
 </div>
+<div id="seg-bar" style="padding:14px 32px 0;max-width:1600px;margin:0 auto"></div>
 <div style="padding:24px 32px;max-width:1600px;margin:0 auto;">
 <div class="upload-strip">
   <div style="display:flex;align-items:center;gap:8px;flex:1">
@@ -453,6 +454,7 @@ body {
 <div id="report-body"><div class="empty"><div class="empty-ico">&#x1F4C2;</div><div class="empty-h">Nejsou data</div><div class="empty-s">Klikněte <strong>↻ Z Admin</strong> nebo <strong>↓ Z Pipedrive</strong>.</div></div></div>
 </div>
 <div class="toast" id="toast"></div>
+<script src="segmentation.js"></script>
 <script>
 
 /* ════════════ CZECH CALENDAR ════════════ */
@@ -881,6 +883,7 @@ function _gCC() {
 /* Načte data z Admin (localStorage) s jasnou zpětnou vazbou */
 function btnLoadAdmin(btn) {
   loadCfg(); loadData();
+  if (window.Segmentation) { Segmentation.attach('seg-bar', { onChange: function() { if (typeof renderReport === 'function') renderReport(); } }); }
   if (st.hasData) {
     _syncChip(); _doRender();
     if (btn) {
