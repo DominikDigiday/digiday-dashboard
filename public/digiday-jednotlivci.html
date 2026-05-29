@@ -661,6 +661,22 @@ function loadData() {
   } catch(e){}
 }
 
+/* ════════════ CLOUD CONFIG SYNC (read-only, Supabase /api/config) ════════════ */
+function cloudPullCfg() {
+  return fetch('/api/config', { cache: 'no-store' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d) {
+      var p = (d && d.config) || {};
+      if (!p || typeof p !== 'object' || Object.keys(p).length === 0) return false;
+      if (p.workDays)            cfg.workDays = Object.assign({}, cfg.workDays, p.workDays);
+      if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
+      if (p.positions)           cfg.positions = Object.assign({}, cfg.positions, p.positions);
+      try { localStorage.setItem(SK+'cfg', JSON.stringify(cfg)); } catch(e){}
+      return true;
+    })
+    .catch(function(e) { console.warn('cloudPullCfg failed', e); return false; });
+}
+
 /* ════════════ CSV ════════════ */
 function parseCSV(text) {
   const lines = text.replace(/\r/g,'').trim().split('\n');
@@ -995,6 +1011,7 @@ function _initPage(renderFn) {
     st.cursor = new Date();
   }
   _syncView(); _syncChip(); renderFn();
+  cloudPullCfg().then(function(updated) { if (updated) { _syncChip(); renderFn(); } });
   // Auto-fetch z Pipedrive pokud nejsou data nebo jsou starsi nez 10 minut
   var fetchedAt = 0;
   try { fetchedAt = +new Date(localStorage.getItem('dcc4_fetched_at') || 0); } catch(e) {}

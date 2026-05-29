@@ -711,8 +711,12 @@ let st = {
 };
 
 /* ════════════ PERSIST ════════════ */
-function saveCfg() {
+function saveCfgLocal() {
   try { localStorage.setItem(SK+'cfg', JSON.stringify(cfg)); } catch(e){}
+}
+function saveCfg() {
+  saveCfgLocal();
+  cloudPushCfg();
 }
 function loadCfg() {
   try {
@@ -725,6 +729,47 @@ function loadCfg() {
     if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
     if (p.positions)           cfg.positions = { ...cfg.positions, ...p.positions };
   } catch(e){}
+}
+
+/* ════════════ CLOUD CONFIG SYNC (Supabase /api/config) ════════════ */
+// Operátori a tímy idú cez /api/operators a /api/teams (apiState).
+// Tu syncujeme: pass, positions, workDays, workedDaysOverrides.
+function _cfgForCloud() {
+  return {
+    pass: cfg.pass,
+    positions: cfg.positions,
+    workDays: cfg.workDays,
+    workedDaysOverrides: cfg.workedDaysOverrides
+  };
+}
+function cloudPullCfg() {
+  return fetch('/api/config', { cache: 'no-store' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d) {
+      var p = (d && d.config) || {};
+      if (!p || typeof p !== 'object' || Object.keys(p).length === 0) return false;
+      if (p.pass)                cfg.pass = p.pass;
+      if (p.workDays)            cfg.workDays = Object.assign({}, cfg.workDays, p.workDays);
+      if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
+      if (p.positions)           cfg.positions = Object.assign({}, cfg.positions, p.positions);
+      saveCfgLocal();
+      return true;
+    })
+    .catch(function(e) { console.warn('cloudPullCfg failed', e); return false; });
+}
+function cloudPushCfg() {
+  return fetch('/api/config', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ config: _cfgForCloud() })
+  }).then(function(r) {
+    if (!r.ok) { toast('⚠ Cloud uložení selhalo (' + r.status + ')', 'err'); return false; }
+    return true;
+  }).catch(function(e) {
+    console.warn('cloudPushCfg failed', e);
+    toast('⚠ Cloud nedostupný, uloženo jen lokálně', 'err');
+    return false;
+  });
 }
 
 // Save/load call data to localStorage for cross-page sharing (gzip not available, store raw)
@@ -1435,8 +1480,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 window.addEventListener('load', function() {
   loadCfg(); loadData();
-  document.getElementById('auth-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
+  var auth = document.getElementById('auth-screen');
+  auth.style.display = 'flex';
+  var btn = auth.querySelector('.auth-btn');
+  var err = document.getElementById('auth-err');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+  if (err) { err.textContent = 'Načítám konfiguraci…'; err.style.color = ''; }
+  var done = false;
+  function ready() {
+    if (done) return; done = true;
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+    if (err) { err.textContent = ''; }
+  }
+  cloudPullCfg().then(ready);
+  setTimeout(ready, 3000);
 });
 
 </script>

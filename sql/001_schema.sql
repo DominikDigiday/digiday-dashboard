@@ -23,6 +23,16 @@ create table if not exists dashboard_operators (
 create index if not exists dashboard_operators_team_idx   on dashboard_operators(team_id);
 create index if not exists dashboard_operators_active_idx on dashboard_operators(active);
 
+-- Single-row JSONB config for admin settings shared across devices
+-- (heslo, workDays overrides, dochádzka overrides, default plány per pozícia).
+-- Operátori a tímy nie sú tu — tie majú vlastné tabuľky vyššie.
+create table if not exists dashboard_config (
+  id          text primary key default 'main',
+  data        jsonb not null default '{}'::jsonb,
+  updated_at  timestamptz not null default now()
+);
+insert into dashboard_config (id) values ('main') on conflict (id) do nothing;
+
 -- Defaultné tímy (môžeš preskočiť / upraviť cez admin UI neskôr)
 insert into dashboard_teams (id, name, color, position) values
   ('cc-tym-a', 'Tým A', '#FF009E', 1),
