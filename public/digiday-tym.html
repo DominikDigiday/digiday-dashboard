@@ -1105,13 +1105,19 @@ function renderTym() {
   var soFar = workdaysSoFar(yr, mo);
   var isCurrentMonth = (new Date().getFullYear() === yr && new Date().getMonth() + 1 === mo);
   var todayWd = isCurrentMonth ? soFar : fond;
+  var ops = cfg.operators.filter(function(o) { return o.active; });
+  // S\u00fahrny po\u010d\u00edtame len pre oper\u00e1torov vybran\u00fdch v segment\u00e1cii \u2014 hovory pod\u013ea
+  // "P\u0159i\u0159azeno u\u017eivateli", sch\u00f4dzky pod\u013ea "Autor" (rovnako ako karty jednotlivcov),
+  // inak by sa zapo\u010d\u00edtali aktivity v\u0161etk\u00fdch \u013eud\u00ed v Pipedrive.
+  var opNames = {};
+  ops.forEach(function(o) { opNames[o.name] = true; });
   var calls = st.calls.filter(function(r) {
     var raw = r['Aktivita - \u010cas aktualizace'] || '';
-    return raw.startsWith(currentMonth);
+    return raw.startsWith(currentMonth) && opNames[r['Aktivita - P\u0159i\u0159azeno u\u017eivateli']];
   });
   var meetings = st.meetings.filter(function(r) {
     var raw = r['Aktivita - \u010cas p\u0159id\xe1n\xed'] || '';
-    return raw.startsWith(currentMonth);
+    return raw.startsWith(currentMonth) && opNames[r['Aktivita - Autor']];
   });
   var conn   = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Spojen\xfd hovor'; });
   var unconn = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Nespojen\xfd hovor'; });
@@ -1121,7 +1127,6 @@ function renderTym() {
   var totS = sched.length, totN = neusk.length;
   var reach = totT > 0 ? totC / totT * 100 : 0;
   var conv  = totC > 0 ? totS / totC * 100 : 0;
-  var ops = cfg.operators.filter(function(o) { return o.active; });
   var totalPlanM = 0, totalPlanMNet = 0, totalPlanMFull = 0;
   ops.forEach(function(op) {
     var worked = getWorkedDays(op.name, currentMonth);

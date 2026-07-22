@@ -1033,8 +1033,13 @@ function renderReport() {
       + '<div class="empty-s">Klikn\u011bte <strong>\u21bb Z Admin</strong> nebo <strong>\u2193 Z Pipedrive</strong>.</div></div>';
     return;
   }
-  var calls    = st.calls.filter(inRangeCalls);
-  var meetings = st.meetings.filter(inRangeMeetings);
+  // Súhrny počítame len pre operátorov vybraných v segmentácii — hovory podľa
+  // "Přiřazeno uživateli", schôdzky podľa "Autor" (rovnako ako tabuľka operátorov),
+  // inak by sa započítali aktivity všetkých ľudí v Pipedrive.
+  var opNames = {};
+  cfg.operators.filter(function(o) { return o.active; }).forEach(function(o) { opNames[o.name] = true; });
+  var calls    = st.calls.filter(inRangeCalls).filter(function(r) { return opNames[r['Aktivita - Přiřazeno uživateli']]; });
+  var meetings = st.meetings.filter(inRangeMeetings).filter(function(r) { return opNames[r['Aktivita - Autor']]; });
   var conn   = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Spojen\xfd hovor'; });
   var unconn = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Nespojen\xfd hovor'; });
   var sched  = meetings.filter(function(r) { return !isNeusk(r) && r['Aktivita - Typ'] === 'Sch\u016fzka'; });
