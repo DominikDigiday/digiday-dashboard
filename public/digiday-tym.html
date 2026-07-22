@@ -596,6 +596,7 @@ let st = {
   cursor: new Date(),
   calls: [],
   meetings: [],
+  interests: [],
   hasData: false
 };
 
@@ -621,6 +622,7 @@ function saveData() {
   try {
     localStorage.setItem(SK+'calls_v',    JSON.stringify(st.calls));
     localStorage.setItem(SK+'meetings_v', JSON.stringify(st.meetings));
+    localStorage.setItem(SK+'interests_v', JSON.stringify(st.interests || []));
     localStorage.setItem(SK+'has_data',   st.hasData ? '1' : '0');
   } catch(e) {
     // Quota exceeded — zkus bez hovorů starších než aktuální měsíc
@@ -633,6 +635,7 @@ function saveData() {
     try {
       localStorage.setItem(SK+'calls_v',    JSON.stringify(trimmed));
       localStorage.setItem(SK+'meetings_v', JSON.stringify(st.meetings));
+    localStorage.setItem(SK+'interests_v', JSON.stringify(st.interests || []));
       localStorage.setItem(SK+'has_data',   st.hasData ? '1' : '0');
       console.log('Trimmed save OK:', trimmed.length, 'calls');
     } catch(e2) { console.error('Save completely failed:', e2); }
@@ -642,9 +645,11 @@ function loadData() {
   try {
     const c = localStorage.getItem(SK+'calls_v');
     const m = localStorage.getItem(SK+'meetings_v');
+    const iv = localStorage.getItem(SK+'interests_v');
     const h = localStorage.getItem(SK+'has_data');
     if (c) st.calls    = JSON.parse(c);
     if (m) st.meetings = JSON.parse(m);
+    if (iv) st.interests = JSON.parse(iv);
     if (h) st.hasData  = h === '1';
   } catch(e){}
 }
@@ -951,9 +956,11 @@ function cloudPull() {
     .then(function(d) {
       var calls = d.calls || [];
       var meetings = d.meetings || [];
+      var interests = d.interests || [];
       try {
         localStorage.setItem('dcc4_calls_v',    JSON.stringify(calls));
         localStorage.setItem('dcc4_meetings_v', JSON.stringify(meetings));
+        localStorage.setItem('dcc4_interests_v', JSON.stringify(interests));
         localStorage.setItem('dcc4_has_data',   (calls.length > 0 || meetings.length > 0) ? '1' : '0');
         if (d.fetchedAt) { localStorage.setItem('dcc4_fetched_at', d.fetchedAt); }
       } catch(e) {}

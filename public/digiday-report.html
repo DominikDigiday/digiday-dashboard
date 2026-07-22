@@ -143,7 +143,7 @@ body {
 /* ── KPI CARD ── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 12px; margin-bottom: 18px;
 }
 .kpi-card {
@@ -571,6 +571,7 @@ let st = {
   cursor: new Date(),
   calls: [],
   meetings: [],
+  interests: [],
   hasData: false
 };
 
@@ -596,6 +597,7 @@ function saveData() {
   try {
     localStorage.setItem(SK+'calls_v',    JSON.stringify(st.calls));
     localStorage.setItem(SK+'meetings_v', JSON.stringify(st.meetings));
+    localStorage.setItem(SK+'interests_v', JSON.stringify(st.interests || []));
     localStorage.setItem(SK+'has_data',   st.hasData ? '1' : '0');
   } catch(e) {
     // Quota exceeded — zkus bez hovorů starších než aktuální měsíc
@@ -608,6 +610,7 @@ function saveData() {
     try {
       localStorage.setItem(SK+'calls_v',    JSON.stringify(trimmed));
       localStorage.setItem(SK+'meetings_v', JSON.stringify(st.meetings));
+    localStorage.setItem(SK+'interests_v', JSON.stringify(st.interests || []));
       localStorage.setItem(SK+'has_data',   st.hasData ? '1' : '0');
       console.log('Trimmed save OK:', trimmed.length, 'calls');
     } catch(e2) { console.error('Save completely failed:', e2); }
@@ -617,9 +620,11 @@ function loadData() {
   try {
     const c = localStorage.getItem(SK+'calls_v');
     const m = localStorage.getItem(SK+'meetings_v');
+    const iv = localStorage.getItem(SK+'interests_v');
     const h = localStorage.getItem(SK+'has_data');
     if (c) st.calls    = JSON.parse(c);
     if (m) st.meetings = JSON.parse(m);
+    if (iv) st.interests = JSON.parse(iv);
     if (h) st.hasData  = h === '1';
   } catch(e){}
 }
@@ -926,9 +931,11 @@ function cloudPull() {
     .then(function(d) {
       var calls = d.calls || [];
       var meetings = d.meetings || [];
+      var interests = d.interests || [];
       try {
         localStorage.setItem('dcc4_calls_v',    JSON.stringify(calls));
         localStorage.setItem('dcc4_meetings_v', JSON.stringify(meetings));
+        localStorage.setItem('dcc4_interests_v', JSON.stringify(interests));
         localStorage.setItem('dcc4_has_data',   (calls.length > 0 || meetings.length > 0) ? '1' : '0');
         if (d.fetchedAt) { localStorage.setItem('dcc4_fetched_at', d.fetchedAt); }
       } catch(e) {}
@@ -1043,12 +1050,13 @@ function renderReport() {
   cfg.operators.filter(function(o) { return o.active; }).forEach(function(o) { opNames[o.name] = true; });
   var calls    = st.calls.filter(inRangeCalls).filter(function(r) { return opNames[r['Aktivita - Přiřazeno uživateli']]; });
   var meetings = st.meetings.filter(inRangeMeetings).filter(function(r) { return opNames[r['Aktivita - Autor']]; });
+  var interests = (st.interests || []).filter(inRangeMeetings).filter(function(r) { return opNames[r['Aktivita - Autor']]; });
   var conn   = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Spojen\xfd hovor'; });
   var unconn = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Nespojen\xfd hovor'; });
   var sched  = meetings.filter(function(r) { return !isNeusk(r) && r['Aktivita - Typ'] === 'Sch\u016fzka'; });
   var neusk  = meetings.filter(isNeusk);
   var totC = conn.length, totU = unconn.length, totT = totC + totU;
-  var totS = sched.length, totN = neusk.length;
+  var totS = sched.length, totN = neusk.length, totZ = interests.length;
   var reach = totT > 0 ? totC / totT * 100 : 0;
   var conv  = totC > 0 ? totS / totC * 100 : 0;
   var isMonth = (st.view === 'month');
@@ -1057,6 +1065,7 @@ function renderReport() {
   h += kpiCard('Spojen\xe9 hovory', totC, 'Dovolatelnost ' + pct(reach), 'var(--grn)');
   h += kpiCard('Nespojen\xe9', totU, 'Celkem: ' + totT, 'var(--txt3)');
   h += kpiCard('Sch\u016fzky', totS, 'Konverze: ' + pct(conv), 'var(--pink)');
+  h += kpiCard('Z\xe1jem', totZ, totC > 0 ? pct(totZ / totC * 100) + ' ze spoj.' : '\u2014', 'var(--blu)');
   h += kpiCard('Neuskute\u010dn\u011bn\xe9', totN, (totS + totN > 0 ? pct(totN / (totS + totN) * 100) : '\u2014') + ' z celku', 'var(--red)');
   h += kpiCard('Konverze spoj.\u2192sch.', pct(conv), (totC > 0 ? Math.round(totC / Math.max(totS, 1)) : 0) + ':1', 'var(--ylw)');
   h += kpiCard('Prac. dny', wd, cfg.operators.filter(function(o) { return o.active; }).length + ' oper\xe1tor\u016f', 'var(--pur)');
@@ -1066,29 +1075,30 @@ function renderReport() {
       + '<span style="font-size:20px">&#x26A0;&#xFE0F;</span>'
       + '<span style="font-size:13px;color:var(--txt2)">V tomto obdob\xed nejsou data. V pam\u011bti: <strong style="color:var(--pink)">' + st.calls.length + ' hov.</strong> a <strong style="color:var(--pink)">' + st.meetings.length + ' sch.</strong></span></div>';
   }
-  h += renderOpTableR(conn, unconn, sched, neusk, isMonth);
+  h += renderOpTableR(conn, unconn, sched, neusk, interests, isMonth);
   h += '<div class="two-col">' + renderSegR(conn, unconn) + renderKonverzeR(sched, conn) + '</div>';
   h += renderSellersR(sched);
   if (isMonth) { h += renderBonusR(conn, sched); }
   body.innerHTML = h;
 }
 
-function renderOpTableR(conn, unconn, sched, neusk, isMonth) {
+function renderOpTableR(conn, unconn, sched, neusk, interests, isMonth) {
   var posLbl = {senior:'Senior', junior2:'Junior 2', junior1:'Junior 1', novacek:'Nov\xe1\u010dek'};
   var ops = cfg.operators.filter(function(o) { return o.active; });
-  var tC = 0, tU = 0, tS = 0, tN = 0;
+  var tC = 0, tU = 0, tS = 0, tN = 0, tZ = 0;
   var h = '<div class="card"><div class="card-head"><div class="card-head-title">P\u0159ehled oper\xe1tor\u016f</div></div>'
     + '<table class="dtable"><thead><tr>'
     + '<th>Oper\xe1tor</th><th>Pozice</th><th>Spoj.</th><th>Nespoj.</th><th>Celkem</th>'
-    + '<th>Dovolat.</th><th>Sch\u016fzky</th><th>Neuskut.</th><th>Konverze</th><th>Spoj./den</th>'
+    + '<th>Dovolat.</th><th>Sch\u016fzky</th><th>Z\xe1jem</th><th>Neuskut.</th><th>Konverze</th><th>Spoj./den</th>'
     + '</tr></thead><tbody>';
   ops.forEach(function(op) {
     var oc = conn.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === op.name; });
     var ou = unconn.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === op.name; });
     var os = sched.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
     var on = neusk.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
-    var cN = oc.length, uN = ou.length, tN2 = cN + uN, sN = os.length, nN = on.length;
-    tC += cN; tU += uN; tS += sN; tN += nN;
+    var oz = interests.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
+    var cN = oc.length, uN = ou.length, tN2 = cN + uN, sN = os.length, nN = on.length, zN = oz.length;
+    tC += cN; tU += uN; tS += sN; tN += nN; tZ += zN;
     var reach = tN2 > 0 ? cN / tN2 * 100 : 0;
     var conv  = cN > 0 ? sN / cN * 100 : 0;
     var days = new Set(oc.map(function(r) { return (r['Aktivita - \u010cas aktualizace'] || '').slice(0, 10); }).filter(function(d) { return d.length === 10; })).size;
@@ -1100,6 +1110,7 @@ function renderOpTableR(conn, unconn, sched, neusk, isMonth) {
       + '<td>' + cN + '</td><td>' + uN + '</td><td>' + tN2 + '</td>'
       + '<td>' + pct(reach) + '</td>'
       + '<td style="color:var(--pink)">' + sN + '</td>'
+      + '<td style="color:var(--blu)">' + (zN > 0 ? zN : '<span style="color:var(--txt3)">0</span>') + '</td>'
       + '<td>' + (nN > 0 ? '<span class="pill pill-red">' + nN + '</span>' : '<span style="color:var(--txt3)">0</span>') + '</td>'
       + '<td>' + (cN > 0 ? pct(conv) : '\u2014') + '</td>'
       + '<td><span class="pill ' + cpdCls + '">' + cpd.toFixed(1) + '</span></td></tr>';
@@ -1110,6 +1121,7 @@ function renderOpTableR(conn, unconn, sched, neusk, isMonth) {
     + '<td>' + tC + '</td><td>' + tU + '</td><td>' + totT + '</td>'
     + '<td style="color:var(--grn)">' + pct(totT > 0 ? tC / totT * 100 : 0) + '</td>'
     + '<td style="color:var(--pink)">' + tS + '</td>'
+    + '<td style="color:var(--blu)">' + tZ + '</td>'
     + '<td style="color:' + (tN > 0 ? 'var(--red)' : 'var(--txt3)') + '">' + tN + '</td>'
     + '<td style="color:var(--ylw)">' + pct(tC > 0 ? tS / tC * 100 : 0) + '</td><td></td></tr>'
     + '</tbody></table></div>';

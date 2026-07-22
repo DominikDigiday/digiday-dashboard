@@ -155,14 +155,26 @@ module.exports = async (req, res) => {
       .filter(a => MEETING_TYPES.has(a.type))
       .map(a => rowFromActivity(a, users, typeNames, orgMap, 'meeting'));
 
+    // Typ "Zájem" — kľúč hľadáme podľa key_string aj názvu, aby fungoval
+    // bez ohľadu na to, ako presne je typ v Pipedrive pomenovaný.
+    const interestKeys = new Set();
+    typeNames.forEach((name, key) => {
+      if (/z[áa]jem/i.test(String(name)) || /zajem/i.test(String(key))) interestKeys.add(key);
+    });
+    const interests = activities
+      .filter(a => interestKeys.has(a.type))
+      .map(a => rowFromActivity(a, users, typeNames, orgMap, 'meeting'));
+
     res.status(200).json({
       calls,
       meetings,
+      interests,
       fetchedAt: new Date().toISOString(),
       since: sinceDate,
       counts: {
         calls: calls.length,
         meetings: meetings.length,
+        interests: interests.length,
         users: users.size,
         orgs: orgMap.size,
       },
