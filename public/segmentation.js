@@ -71,9 +71,13 @@
   }
 
   function applyToCfg() {
-    if (typeof window.cfg === 'object' && window.cfg) {
-      window.cfg.operators = getFilteredOperators();
-    }
+    // Stránky deklarujú cfg cez `let`, takže nie je na window — musíme siahnuť
+    // na globálny lexikálny binding priamo (typeof je bezpečný aj keď neexistuje).
+    try {
+      if (typeof cfg === 'object' && cfg) {
+        cfg.operators = getFilteredOperators();
+      }
+    } catch (e) { console.warn('Segmentation.applyToCfg:', e); }
   }
 
   function fire() {
