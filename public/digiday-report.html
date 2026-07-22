@@ -584,7 +584,7 @@ function loadCfg() {
     if (!s) return;
     const p = JSON.parse(s);
     if (p.pass)                cfg.pass = p.pass;
-    if (p.operators)           cfg.operators = p.operators;
+    if (p.operators && !(window.Segmentation && Segmentation.isLoaded())) cfg.operators = p.operators; // po nacitani segmentacie su operatori zo Supabase, localStorage kopiu nepouzivat
     if (p.workDays)            cfg.workDays = { ...cfg.workDays, ...p.workDays };
     if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
     if (p.positions)           cfg.positions = { ...cfg.positions, ...p.positions };
