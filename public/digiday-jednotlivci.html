@@ -595,6 +595,7 @@ let cfg = {
   ],
   workDays: {},          // YYYY-MM → override počtu prac.dní (prázdné = auto z kalendáře)
   workedDaysOverrides: {},  // "YYYY-MM__Jméno" → ruční přepis odprac. dní operátora
+  teamMetrics: {},       // team_id → 'schuzky' | 'zajem'
   positions: {
     senior:  { planM:35, planD:35 },
     junior2: { planM:15, planD:25 },
@@ -626,6 +627,7 @@ function loadCfg() {
     if (p.workDays)            cfg.workDays = { ...cfg.workDays, ...p.workDays };
     if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
     if (p.positions)           cfg.positions = { ...cfg.positions, ...p.positions };
+    if (p.teamMetrics)         cfg.teamMetrics = p.teamMetrics;
   } catch(e){}
 }
 
@@ -676,6 +678,7 @@ function cloudPullCfg() {
       if (p.workDays)            cfg.workDays = Object.assign({}, cfg.workDays, p.workDays);
       if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
       if (p.positions)           cfg.positions = Object.assign({}, cfg.positions, p.positions);
+      if (p.teamMetrics)         cfg.teamMetrics = p.teamMetrics;
       try { localStorage.setItem(SK+'cfg', JSON.stringify(cfg)); } catch(e){}
       return true;
     })
@@ -1118,7 +1121,12 @@ function renderJednotlivec() {
   var posLbl = {senior:'Senior', junior2:'Junior 2', junior1:'Junior 1', novacek:'Nov\xe1\u010dek'};
   var conn   = st.calls.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === selectedOp && r['Aktivita - Typ'] === 'Spojen\xfd hovor'; }).filter(inRangeCalls);
   var unconn = st.calls.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === selectedOp && r['Aktivita - Typ'] === 'Nespojen\xfd hovor'; }).filter(inRangeCalls);
-  var sched  = st.meetings.filter(function(r) { return r['Aktivita - Autor'] === selectedOp && !isNeusk(r) && r['Aktivita - Typ'] === 'Sch\u016fzka'; }).filter(inRangeMeetings);
+  // Per-t\u00edmov\u00e1 metrika: oper\u00e1torovi z t\u00edmu s metrikou 'zajem' sa miesto sch\u00f4dzok po\u010d\u00edta typ Z\u00e1jem
+  var _selOp = (cfg.operators || []).filter(function(o) { return o.name === selectedOp; })[0];
+  var _selMetric = _selOp && (cfg.teamMetrics || {})[_selOp.team_id] === 'zajem' ? 'zajem' : 'schuzky';
+  var sched  = _selMetric === 'zajem'
+    ? (st.interests || []).filter(function(r) { return r['Aktivita - Autor'] === selectedOp; }).filter(inRangeMeetings)
+    : st.meetings.filter(function(r) { return r['Aktivita - Autor'] === selectedOp && !isNeusk(r) && r['Aktivita - Typ'] === 'Sch\u016fzka'; }).filter(inRangeMeetings);
   var neusk  = st.meetings.filter(function(r) { return r['Aktivita - Autor'] === selectedOp && isNeusk(r); }).filter(inRangeMeetings);
   var totC = conn.length, totU = unconn.length, totT = totC + totU;
   var totS = sched.length, totN = neusk.length;

@@ -558,6 +558,7 @@ let cfg = {
   ],
   workDays: {},          // YYYY-MM → override počtu prac.dní (prázdné = auto z kalendáře)
   workedDaysOverrides: {},  // "YYYY-MM__Jméno" → ruční přepis odprac. dní operátora
+  teamMetrics: {},       // team_id → 'schuzky' | 'zajem'
   positions: {
     senior:  { planM:35, planD:35 },
     junior2: { planM:15, planD:25 },
@@ -589,6 +590,7 @@ function loadCfg() {
     if (p.workDays)            cfg.workDays = { ...cfg.workDays, ...p.workDays };
     if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
     if (p.positions)           cfg.positions = { ...cfg.positions, ...p.positions };
+    if (p.teamMetrics)         cfg.teamMetrics = p.teamMetrics;
   } catch(e){}
 }
 
@@ -639,6 +641,7 @@ function cloudPullCfg() {
       if (p.workDays)            cfg.workDays = Object.assign({}, cfg.workDays, p.workDays);
       if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
       if (p.positions)           cfg.positions = Object.assign({}, cfg.positions, p.positions);
+      if (p.teamMetrics)         cfg.teamMetrics = p.teamMetrics;
       try { localStorage.setItem(SK+'cfg', JSON.stringify(cfg)); } catch(e){}
       return true;
     })

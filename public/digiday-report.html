@@ -558,6 +558,7 @@ let cfg = {
   ],
   workDays: {},          // YYYY-MM → override počtu prac.dní (prázdné = auto z kalendáře)
   workedDaysOverrides: {},  // "YYYY-MM__Jméno" → ruční přepis odprac. dní operátora
+  teamMetrics: {},       // team_id → 'schuzky' | 'zajem'
   positions: {
     senior:  { planM:35, planD:35 },
     junior2: { planM:15, planD:25 },
@@ -589,6 +590,7 @@ function loadCfg() {
     if (p.workDays)            cfg.workDays = { ...cfg.workDays, ...p.workDays };
     if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
     if (p.positions)           cfg.positions = { ...cfg.positions, ...p.positions };
+    if (p.teamMetrics)         cfg.teamMetrics = p.teamMetrics;
   } catch(e){}
 }
 
@@ -639,6 +641,7 @@ function cloudPullCfg() {
       if (p.workDays)            cfg.workDays = Object.assign({}, cfg.workDays, p.workDays);
       if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
       if (p.positions)           cfg.positions = Object.assign({}, cfg.positions, p.positions);
+      if (p.teamMetrics)         cfg.teamMetrics = p.teamMetrics;
       try { localStorage.setItem(SK+'cfg', JSON.stringify(cfg)); } catch(e){}
       return true;
     })
@@ -1055,8 +1058,14 @@ function renderReport() {
   var unconn = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Nespojen\xfd hovor'; });
   var sched  = meetings.filter(function(r) { return !isNeusk(r) && r['Aktivita - Typ'] === 'Sch\u016fzka'; });
   var neusk  = meetings.filter(isNeusk);
+  // Per-t\u00edmov\u00e1 metrika: oper\u00e1torom z t\u00edmov s metrikou 'zajem' sa miesto sch\u00f4dzok
+  // po\u010d\u00edta typ aktivity Z\u00e1jem (schedM = spojen\u00e1 metrika, sched = re\u00e1lne sch\u00f4dzky).
+  var opMetric = {};
+  cfg.operators.filter(function(o) { return o.active; }).forEach(function(o) { opMetric[o.name] = ((cfg.teamMetrics || {})[o.team_id] === 'zajem') ? 'zajem' : 'schuzky'; });
+  var schedM = sched.filter(function(r) { return opMetric[r['Aktivita - Autor']] !== 'zajem'; })
+    .concat(interests.filter(function(r) { return opMetric[r['Aktivita - Autor']] === 'zajem'; }));
   var totC = conn.length, totU = unconn.length, totT = totC + totU;
-  var totS = sched.length, totN = neusk.length, totZ = interests.length;
+  var totS = schedM.length, totN = neusk.length, totZ = interests.length;
   var reach = totT > 0 ? totC / totT * 100 : 0;
   var conv  = totC > 0 ? totS / totC * 100 : 0;
   var isMonth = (st.view === 'month');
@@ -1075,10 +1084,10 @@ function renderReport() {
       + '<span style="font-size:20px">&#x26A0;&#xFE0F;</span>'
       + '<span style="font-size:13px;color:var(--txt2)">V tomto obdob\xed nejsou data. V pam\u011bti: <strong style="color:var(--pink)">' + st.calls.length + ' hov.</strong> a <strong style="color:var(--pink)">' + st.meetings.length + ' sch.</strong></span></div>';
   }
-  h += renderOpTableR(conn, unconn, sched, neusk, interests, isMonth);
-  h += '<div class="two-col">' + renderSegR(conn, unconn) + renderKonverzeR(sched, conn) + '</div>';
+  h += renderOpTableR(conn, unconn, schedM, neusk, interests, isMonth);
+  h += '<div class="two-col">' + renderSegR(conn, unconn) + renderKonverzeR(schedM, conn) + '</div>';
   h += renderSellersR(sched);
-  if (isMonth) { h += renderBonusR(conn, sched); }
+  if (isMonth) { h += renderBonusR(conn, schedM); }
   body.innerHTML = h;
 }
 

@@ -514,7 +514,7 @@ body {
       <div class="card-title">&#x1F465; Správa týmů</div>
       <div class="info-box">Tým = segment operátorů. Operátoři se pak přiřazují k týmu v záložce Operátoři. Změny se ukládají do Supabase a okamžitě se projeví na všech report stránkách.</div>
       <table class="dtable" style="margin:14px 0">
-        <thead><tr><th style="width:40%">Název</th><th style="width:15%">Barva</th><th style="width:15%">Pořadí</th><th></th></tr></thead>
+        <thead><tr><th style="width:30%">Název</th><th style="width:13%">Barva</th><th style="width:13%">Pořadí</th><th style="width:22%">Metrika</th><th></th></tr></thead>
         <tbody id="teams-tbody"></tbody>
       </table>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -694,6 +694,7 @@ let cfg = {
   ],
   workDays: {},          // YYYY-MM → override počtu prac.dní (prázdné = auto z kalendáře)
   workedDaysOverrides: {},  // "YYYY-MM__Jméno" → ruční přepis odprac. dní operátora
+  teamMetrics: {},       // team_id → 'schuzky' | 'zajem' — která aktivita se týmu počítá vůči plánu
   positions: {
     senior:  { planM:35, planD:35 },
     junior2: { planM:15, planD:25 },
@@ -728,6 +729,7 @@ function loadCfg() {
     if (p.workDays)            cfg.workDays = { ...cfg.workDays, ...p.workDays };
     if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
     if (p.positions)           cfg.positions = { ...cfg.positions, ...p.positions };
+    if (p.teamMetrics)         cfg.teamMetrics = p.teamMetrics;
   } catch(e){}
 }
 
@@ -739,7 +741,8 @@ function _cfgForCloud() {
     pass: cfg.pass,
     positions: cfg.positions,
     workDays: cfg.workDays,
-    workedDaysOverrides: cfg.workedDaysOverrides
+    workedDaysOverrides: cfg.workedDaysOverrides,
+    teamMetrics: cfg.teamMetrics || {}
   };
 }
 function cloudPullCfg() {
@@ -752,6 +755,7 @@ function cloudPullCfg() {
       if (p.workDays)            cfg.workDays = Object.assign({}, cfg.workDays, p.workDays);
       if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
       if (p.positions)           cfg.positions = Object.assign({}, cfg.positions, p.positions);
+      if (p.teamMetrics)         cfg.teamMetrics = p.teamMetrics;
       saveCfgLocal();
       return true;
     })
@@ -1209,9 +1213,18 @@ function renderTeamsTable() {
       + '<td><input class="setting-inp" style="width:100%" value="' + (t.name || '').replace(/"/g,'&quot;') + '" onchange="apiState.teams[' + i + '].name=this.value"></td>'
       + '<td><input class="setting-inp" type="color" value="' + (t.color || '#FF009E') + '" onchange="apiState.teams[' + i + '].color=this.value" style="width:60px;padding:2px;height:32px"></td>'
       + '<td><input class="setting-inp" type="number" style="width:70px" value="' + (t.position||0) + '" onchange="apiState.teams[' + i + '].position=+this.value"></td>'
+      + '<td><select class="setting-inp" onchange="setTeamMetric(\'' + t.id + '\', this.value)" title="Která aktivita se tomuto týmu počítá vůči plánu">'
+      +   '<option value="schuzky"' + (((cfg.teamMetrics || {})[t.id] || 'schuzky') === 'schuzky' ? ' selected' : '') + '>Schůzky</option>'
+      +   '<option value="zajem"'   + ((cfg.teamMetrics || {})[t.id] === 'zajem' ? ' selected' : '') + '>Zájem</option>'
+      + '</select></td>'
       + '<td><button class="btn-danger" onclick="delTeam(' + i + ')" title="Smazat tým">&#x1F5D1;</button></td>'
       + '</tr>';
   }).join('');
+}
+
+function setTeamMetric(teamId, val) {
+  if (!cfg.teamMetrics) { cfg.teamMetrics = {}; }
+  cfg.teamMetrics[teamId] = val === 'zajem' ? 'zajem' : 'schuzky';
 }
 
 function addTeam() {
@@ -1243,6 +1256,8 @@ function saveTeams() {
       promises.push(apiFetchJson('/api/teams?id=' + encodeURIComponent(id), {method:'DELETE'}));
     }
   });
+  // Metrika tímov žije v configu (dashboard_config.teamMetrics), nie v tabuľke teams
+  saveCfg();
   Promise.all(promises)
     .then(function() { toast('Týmy uloženy ✓'); return loadApiState(); })
     .catch(function(e) { toast('Chyba: ' + e.message, 'err'); });

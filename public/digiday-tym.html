@@ -583,6 +583,7 @@ let cfg = {
   ],
   workDays: {},          // YYYY-MM → override počtu prac.dní (prázdné = auto z kalendáře)
   workedDaysOverrides: {},  // "YYYY-MM__Jméno" → ruční přepis odprac. dní operátora
+  teamMetrics: {},       // team_id → 'schuzky' | 'zajem'
   positions: {
     senior:  { planM:35, planD:35 },
     junior2: { planM:15, planD:25 },
@@ -614,6 +615,7 @@ function loadCfg() {
     if (p.workDays)            cfg.workDays = { ...cfg.workDays, ...p.workDays };
     if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
     if (p.positions)           cfg.positions = { ...cfg.positions, ...p.positions };
+    if (p.teamMetrics)         cfg.teamMetrics = p.teamMetrics;
   } catch(e){}
 }
 
@@ -664,6 +666,7 @@ function cloudPullCfg() {
       if (p.workDays)            cfg.workDays = Object.assign({}, cfg.workDays, p.workDays);
       if (p.workedDaysOverrides) cfg.workedDaysOverrides = p.workedDaysOverrides;
       if (p.positions)           cfg.positions = Object.assign({}, cfg.positions, p.positions);
+      if (p.teamMetrics)         cfg.teamMetrics = p.teamMetrics;
       try { localStorage.setItem(SK+'cfg', JSON.stringify(cfg)); } catch(e){}
       return true;
     })
@@ -1130,6 +1133,19 @@ function renderTym() {
   var unconn = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Nespojen\xfd hovor'; });
   var sched  = meetings.filter(function(r) { return !isNeusk(r) && r['Aktivita - Typ'] === 'Sch\u016fzka'; });
   var neusk  = meetings.filter(isNeusk);
+  // Per-t\u00edmov\u00e1 metrika: oper\u00e1torom z t\u00edmov s metrikou 'zajem' sa miesto sch\u00f4dzok
+  // po\u010d\u00edta typ aktivity Z\u00e1jem (vo\u010di rovnak\u00e9mu pl\u00e1nu sch\u00f4dzok).
+  var opMetric = {};
+  ops.forEach(function(o) { opMetric[o.name] = ((cfg.teamMetrics || {})[o.team_id] === 'zajem') ? 'zajem' : 'schuzky'; });
+  var interestsM = (st.interests || []).filter(function(r) {
+    var raw = r['Aktivita - \u010cas p\u0159id\xe1n\xed'] || '';
+    return raw.startsWith(currentMonth) && opNames[r['Aktivita - Autor']];
+  });
+  sched = sched.filter(function(r) { return opMetric[r['Aktivita - Autor']] !== 'zajem'; })
+    .concat(interestsM.filter(function(r) { return opMetric[r['Aktivita - Autor']] === 'zajem'; }));
+  var metricSet = {};
+  ops.forEach(function(o) { metricSet[opMetric[o.name]] = true; });
+  var metricLbl = metricSet.zajem ? (metricSet.schuzky ? 'Sch\u016fzky+Z\xe1jem' : 'Z\xe1jem') : 'Sch\u016fzky';
   var totC = conn.length, totU = unconn.length, totT = totC + totU;
   var totS = sched.length, totN = neusk.length;
   var reach = totT > 0 ? totC / totT * 100 : 0;
@@ -1153,7 +1169,7 @@ function renderTym() {
   h += '<div class="card-head"><div class="card-head-title">Celkov\xe9 pl\xe1n\xe9 ukazatele \u2014 ' + CZ_MONTH_NAMES[mo-1] + ' ' + yr + '</div>'
     + '<div style="font-family:var(--mono);font-size:10px;color:var(--txt3)">fond: ' + fond + ' dn\xed \xb7 k dnes: ' + soFar + '</div></div>';
   h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:16px 0;justify-items:center">';
-  h += ringBlock('Sch\u016fzky vs pl\xe1n', totS, totalPlanMNet, schPct, schClr, 'net pl\xe1n: ' + totalPlanMNet);
+  h += ringBlock(metricLbl + ' vs pl\xe1n', totS, totalPlanMNet, schPct, schClr, 'net pl\xe1n: ' + totalPlanMNet);
   h += ringBlock('Spoj. hovory/den', cpdAvg.toFixed(1), planDAvg.toFixed(0), cpdPct, cClr, totC + ' spoj. celkem');
   h += ringBlock('Dovolatelnost', pct(reach), '100 %', reach, rClr, totC + ' spoj. z ' + totT);
   h += '</div>';
@@ -1181,7 +1197,7 @@ function renderTym() {
   };
   h += funStep('&#x1F4DE;', 'Celkem vol\xe1n\xed', totT, null, true);
   h += funStep('&#x2705;', 'Spojen\xe9 hovory', totC, reach, true);
-  h += funStep('&#x1F4C5;', 'Sch\u016fzky', totS, conv, true);
+  h += funStep('&#x1F4C5;', metricLbl, totS, conv, true);
   h += funStep('&#x274C;', 'Neuskute\u010dn\u011bn\xe9', totN, null, false);
   h += '</div>';
   h += '<div class="card"><div class="card-head"><div class="card-head-title">Oper\xe1to\u0159i</div></div>';
@@ -1204,7 +1220,7 @@ function renderTym() {
       + '<div style="width:32px;height:32px;border-radius:50%;background:' + posClr + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#000;flex-shrink:0">' + initials + '</div>'
       + '<div class="op-mini-name">' + op.name + '</div></div>'
       + '<div class="op-mini-kpi">'
-      + '<div class="op-mini-row"><span>Sch\u016fzky</span><b style="color:' + schClr2 + '">' + sN + '/' + planMNet + '</b></div>'
+      + '<div class="op-mini-row"><span>' + (opMetric[op.name] === 'zajem' ? 'Z\xe1jem' : 'Sch\u016fzky') + '</span><b style="color:' + schClr2 + '">' + sN + '/' + planMNet + '</b></div>'
       + planBar(sN, planMNet, schClr2)
       + '<div class="op-mini-row"><span>Spoj./den</span><b style="color:' + cClr2 + '">' + cpd.toFixed(1) + '/' + op.planD + '</b></div>'
       + planBar(cpd, op.planD, cClr2)
