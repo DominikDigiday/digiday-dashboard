@@ -997,6 +997,9 @@ function _syncView() {
 
 function _initPage(renderFn) {
   loadCfg(); loadData();
+  // Segmentácia (tímy + operátori zo Supabase) sa musí natiahnuť hneď pri loade,
+  // inak stránka zostane na zastaranej kópii operátorov z localStorage.
+  if (window.Segmentation) { Segmentation.attach('seg-bar', { onChange: renderFn }); }
   var saved = loadMonth();
   var sv = loadView();
   st.view = sv;
