@@ -785,7 +785,7 @@ function getWorkedDaysAuto(opName, monthKey) {
   const days = new Set(
     st.calls
       .filter(r => {
-        if (r['Aktivita - Přiřazeno uživateli'] !== opName) return false;
+        if (r['Aktivita - Autor'] !== opName) return false;
         const raw = r['Aktivita - Čas aktualizace'] || r['Aktivita - Čas přidání'] || '';
         return raw.startsWith(monthKey);
       })
@@ -1075,7 +1075,7 @@ function rebuildOpSelector() {
   if (!sel) { return; }
   var names = {};
   cfg.operators.filter(function(o) { return o.active; }).forEach(function(o) { names[o.name] = true; });
-  st.calls.forEach(function(r) { var n = r['Aktivita - Přiřazeno uživateli']; if (n) { names[n] = true; } });
+  st.calls.forEach(function(r) { var n = r['Aktivita - Autor']; if (n) { names[n] = true; } });
   var arr = Object.keys(names).sort();
   // Použij innerHTML místo createElement pro lepší kompatibilitu
   var html = '<option value="">— Vyberte operátora —</option>';
@@ -1119,8 +1119,8 @@ function renderJednotlivec() {
   cfg.operators.forEach(function(o) { if (o.name === selectedOp) { op = o; } });
   if (!op) { op = {name: selectedOp, pos: 'junior1', planM: 10, planD: 20}; }
   var posLbl = {senior:'Senior', junior2:'Junior 2', junior1:'Junior 1', novacek:'Nov\xe1\u010dek'};
-  var conn   = st.calls.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === selectedOp && r['Aktivita - Typ'] === 'Spojen\xfd hovor'; }).filter(inRangeCalls);
-  var unconn = st.calls.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === selectedOp && r['Aktivita - Typ'] === 'Nespojen\xfd hovor'; }).filter(inRangeCalls);
+  var conn   = st.calls.filter(function(r) { return r['Aktivita - Autor'] === selectedOp && r['Aktivita - Typ'] === 'Spojen\xfd hovor'; }).filter(inRangeCalls);
+  var unconn = st.calls.filter(function(r) { return r['Aktivita - Autor'] === selectedOp && r['Aktivita - Typ'] === 'Nespojen\xfd hovor'; }).filter(inRangeCalls);
   // Per-t\u00edmov\u00e1 metrika: oper\u00e1torovi z t\u00edmu s metrikou 'zajem' sa miesto sch\u00f4dzok po\u010d\u00edta typ Z\u00e1jem
   var _selOp = (cfg.operators || []).filter(function(o) { return o.name === selectedOp; })[0];
   var _selMetric = _selOp && (cfg.teamMetrics || {})[_selOp.team_id] === 'zajem' ? 'zajem' : 'schuzky';

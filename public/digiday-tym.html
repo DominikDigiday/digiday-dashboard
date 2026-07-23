@@ -773,7 +773,7 @@ function getWorkedDaysAuto(opName, monthKey) {
   const days = new Set(
     st.calls
       .filter(r => {
-        if (r['Aktivita - Přiřazeno uživateli'] !== opName) return false;
+        if (r['Aktivita - Autor'] !== opName) return false;
         const raw = r['Aktivita - Čas aktualizace'] || r['Aktivita - Čas přidání'] || '';
         return raw.startsWith(monthKey);
       })
@@ -1116,14 +1116,13 @@ function renderTym() {
   var isCurrentMonth = (new Date().getFullYear() === yr && new Date().getMonth() + 1 === mo);
   var todayWd = isCurrentMonth ? soFar : fond;
   var ops = cfg.operators.filter(function(o) { return o.active; });
-  // S\u00fahrny po\u010d\u00edtame len pre oper\u00e1torov vybran\u00fdch v segment\u00e1cii \u2014 hovory pod\u013ea
-  // "P\u0159i\u0159azeno u\u017eivateli", sch\u00f4dzky pod\u013ea "Autor" (rovnako ako karty jednotlivcov),
-  // inak by sa zapo\u010d\u00edtali aktivity v\u0161etk\u00fdch \u013eud\u00ed v Pipedrive.
+  // S\u00fahrny po\u010d\u00edtame len pre oper\u00e1torov vybran\u00fdch v segment\u00e1cii a v\u0161etko pod\u013ea
+  // po\u013ea "Autor" (kto aktivitu vytvoril) \u2014 hovory, sch\u00f4dzky aj z\u00e1jmy.
   var opNames = {};
   ops.forEach(function(o) { opNames[o.name] = true; });
   var calls = st.calls.filter(function(r) {
     var raw = r['Aktivita - \u010cas aktualizace'] || '';
-    return raw.startsWith(currentMonth) && opNames[r['Aktivita - P\u0159i\u0159azeno u\u017eivateli']];
+    return raw.startsWith(currentMonth) && opNames[r['Aktivita - Autor']];
   });
   var meetings = st.meetings.filter(function(r) {
     var raw = r['Aktivita - \u010cas p\u0159id\xe1n\xed'] || '';
@@ -1203,7 +1202,7 @@ function renderTym() {
   h += '<div class="card"><div class="card-head"><div class="card-head-title">Oper\xe1to\u0159i</div></div>';
   h += '<div class="op-mini-grid">';
   ops.forEach(function(op) {
-    var oc = conn.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === op.name; });
+    var oc = conn.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
     var os = sched.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
     var cN = oc.length, sN = os.length;
     var worked = getWorkedDays(op.name, currentMonth);

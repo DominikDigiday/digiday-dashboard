@@ -748,7 +748,7 @@ function getWorkedDaysAuto(opName, monthKey) {
   const days = new Set(
     st.calls
       .filter(r => {
-        if (r['Aktivita - Přiřazeno uživateli'] !== opName) return false;
+        if (r['Aktivita - Autor'] !== opName) return false;
         const raw = r['Aktivita - Čas aktualizace'] || r['Aktivita - Čas přidání'] || '';
         return raw.startsWith(monthKey);
       })
@@ -1046,12 +1046,12 @@ function renderReport() {
       + '<div class="empty-s">Klikn\u011bte <strong>\u21bb Z Admin</strong> nebo <strong>\u2193 Z Pipedrive</strong>.</div></div>';
     return;
   }
-  // Súhrny počítame len pre operátorov vybraných v segmentácii — hovory podľa
-  // "Přiřazeno uživateli", schôdzky podľa "Autor" (rovnako ako tabuľka operátorov),
-  // inak by sa započítali aktivity všetkých ľudí v Pipedrive.
+  // Súhrny počítame len pre operátorov vybraných v segmentácii a všetko podľa
+  // poľa "Autor" (kto aktivitu vytvoril) — hovory, schôdzky aj zájmy.
+  // Výnimka: sekcia obchodníkov (renderSellersR) zostáva podľa "Přiřazeno uživateli".
   var opNames = {};
   cfg.operators.filter(function(o) { return o.active; }).forEach(function(o) { opNames[o.name] = true; });
-  var calls    = st.calls.filter(inRangeCalls).filter(function(r) { return opNames[r['Aktivita - Přiřazeno uživateli']]; });
+  var calls    = st.calls.filter(inRangeCalls).filter(function(r) { return opNames[r['Aktivita - Autor']]; });
   var meetings = st.meetings.filter(inRangeMeetings).filter(function(r) { return opNames[r['Aktivita - Autor']]; });
   var interests = (st.interests || []).filter(inRangeMeetings).filter(function(r) { return opNames[r['Aktivita - Autor']]; });
   var conn   = calls.filter(function(r) { return r['Aktivita - Typ'] === 'Spojen\xfd hovor'; });
@@ -1101,8 +1101,8 @@ function renderOpTableR(conn, unconn, sched, neusk, interests, isMonth) {
     + '<th>Dovolat.</th><th>Sch\u016fzky</th><th>Z\xe1jem</th><th>Neuskut.</th><th>Konverze</th><th>Spoj./den</th>'
     + '</tr></thead><tbody>';
   ops.forEach(function(op) {
-    var oc = conn.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === op.name; });
-    var ou = unconn.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === op.name; });
+    var oc = conn.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
+    var ou = unconn.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
     var os = sched.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
     var on = neusk.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
     var oz = interests.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
@@ -1220,7 +1220,7 @@ function renderBonusR(conn, sched) {
     + '<th>Absence</th><th>Brutto</th><th>Kr\xe1cen\xed</th><th>Bonus</th>'
     + '</tr></thead><tbody>';
   ops.forEach(function(op) {
-    var oc = conn.filter(function(r) { return r['Aktivita - P\u0159i\u0159azeno u\u017eivateli'] === op.name; });
+    var oc = conn.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
     var os = sched.filter(function(r) { return r['Aktivita - Autor'] === op.name; });
     var cN = oc.length, sN = os.length;
     var worked = getWorkedDays(op.name, monthKey);
